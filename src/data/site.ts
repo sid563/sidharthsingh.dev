@@ -8,12 +8,12 @@ export const site = {
   title: "Sidharth Singh · Backend Engineer",
   role: "Software Engineer at 1buy.ai",
   /** Second line of the hero headline; the name is the first line. */
-  headline: "builds backends that stay fast and correct under load.",
+  headline: "builds backends that stay correct under load.",
   /** One-line version for the footer, OG image and anywhere the name is already shown. */
-  tagline: "Backends that stay fast and correct under load.",
-  eyebrow: "Software Engineer · Rust · Distributed Systems",
+  tagline: "Backends that stay correct under load.",
+  eyebrow: "Backend Engineer · Rust · Kafka · PostgreSQL",
   description:
-    "Event-driven services, Kafka pipelines and Rust schedulers for platforms that move physical goods. Software engineer at 1buy.ai in Delhi, going deeper into PostgreSQL and Kafka than the job requires.",
+    "Event-driven services, Kafka pipelines and Rust on the hot paths, for platforms that move physical goods. Backend engineer at 1buy.ai in Delhi, learning PostgreSQL internals and Kafka from first principles, in public.",
   /** Hero stat tiles. Keep every number verifiable. */
   stats: [
     { value: 2, suffix: "+", label: "years in production", detail: "Rust, TypeScript, Python" },
