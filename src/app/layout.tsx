@@ -26,6 +26,9 @@ export const metadata: Metadata = {
     template: `%s · ${site.name}`,
   },
   description: site.description,
+  // "./" resolves to the current route under metadataBase, so every page gets
+  // its own canonical and the vercel.app host never competes with the domain.
+  alternates: { canonical: "./" },
   openGraph: {
     type: "website",
     siteName: site.name,
