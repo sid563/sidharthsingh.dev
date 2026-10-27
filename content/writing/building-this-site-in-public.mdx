@@ -1,0 +1,19 @@
+---
+title: "Building this site in public"
+summary: "The site you are reading is a pilot built in an afternoon. This post is the changelog, the decisions, and what is still rough."
+date: "2026-10-27"
+tags: [meta, nextjs]
+---
+
+I wanted one place that holds the things a resume cannot: what I am working on now, what I am learning, what I plan to build, and how far along each of those is.
+
+## Decisions
+
+- **Next.js 16, Tailwind 4, shadcn/ui, Motion.** The richest ecosystem for the kind of interface I want, and Vercel hosting is free for a personal site.
+- **Content as typed files.** Projects, posts, roadmap items and progress journeys are MDX files with frontmatter validated by Zod. A bad field fails the build. As a backend engineer, that is how I like my data.
+- **Calm by default.** Typography first, one accent colour, one or two deliberate interactions. Restraint reads as confidence.
+- **Light and dark from day one.** System preference respected, toggle in the header, no flash on load.
+
+## What is rough
+
+This is a pilot. The design will get a few more passes, the resume needs a PDF export, and the progress numbers need to be kept honest.

@@ -1,0 +1,31 @@
+---
+title: "Personal RAG assistant on AWS"
+summary: "A retrieval-augmented chat service built to learn the full build-and-deploy loop: NestJS, MongoDB Atlas vector search, Hugging Face embeddings, Groq-hosted Llama, Docker, and a hand-provisioned EC2 box."
+date: "2026-05-03"
+status: shipped
+featured: false
+kind: personal
+role: "Everything"
+stack: [NestJS, TypeScript, MongoDB Atlas, Hugging Face, Groq, Docker, AWS EC2]
+metrics:
+  - { label: "Retrieval", value: "Atlas Vector Search" }
+  - { label: "LLM", value: "Llama via Groq" }
+  - { label: "Deploy", value: "Docker on EC2, ap-south-1" }
+links:
+  - { label: "GitHub", href: "https://github.com/sid563" }
+order: 50
+---
+
+## Why
+
+I wanted to own every step from `git init` to a public URL, including the parts a platform usually hides: security groups, SSH, running a container on a server, and what breaks when the instance restarts.
+
+## What it does
+
+- Ingests documents, chunks them, embeds them with a Hugging Face model and stores vectors in MongoDB Atlas.
+- Answers questions over that corpus with a Llama model served by Groq.
+- Runs as a single Docker container on an EC2 instance.
+
+## Loose ends I know about
+
+No Elastic IP yet, no domain or TLS, and the deploy is a manual pull. Fixing those is part of the [cloud and DevOps roadmap](/roadmap).

@@ -1,0 +1,35 @@
+---
+title: "Order-fulfilment backend: purchase order to customs"
+summary: "An event-driven fulfilment service on FastAPI, PostgreSQL and Kafka that carries a purchase order through shipment and customs, with DHL carrier integration and Claude parsing the trade documents."
+date: "2026-10-01"
+status: in-progress
+featured: true
+kind: work
+org: "1buy.ai"
+role: "Backend engineer"
+stack: [Python, FastAPI, PostgreSQL, Kafka, SQLAlchemy, Alembic, Claude API]
+metrics:
+  - { label: "Workflow", value: "PO → shipment → customs" }
+  - { label: "Integrations", value: "DHL carrier API, Microsoft 365 mail" }
+  - { label: "Documents", value: "Packing lists, Bills of Entry parsed by Claude" }
+order: 30
+---
+
+## Context
+
+Fulfilment for a B2B procurement platform spans several departments and several external parties: suppliers, carriers, customs agents, finance. Most of the coordination used to happen in email threads.
+
+## What the service does
+
+- Models the lifecycle of a purchase order through shipment creation, carrier booking and customs clearance as explicit states and events.
+- Publishes domain events to Kafka so other departments react to what happened rather than polling.
+- Reads trade documents (packing lists, Bills of Entry) with Claude and turns them into structured records with human review where confidence is low.
+- Reads its own inbox: an [inbound mail pipeline](/projects/inbound-mail-agents) anchors every email to an order or shipment, classifies it, and dispatches the resulting action to the context that owns it.
+- Talks to the DHL carrier API for bookings and tracking.
+
+## Engineering notes
+
+- PostgreSQL with SQLAlchemy 2 async and Alembic migrations. The schema is designed around an append-only event log so the timeline of a shipment is always reconstructible.
+- Strict module boundaries enforced with import rules, so contexts talk through published events rather than direct imports.
+
+This is live work, so the write-up stays at this level of detail.

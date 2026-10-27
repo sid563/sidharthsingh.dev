@@ -1,0 +1,23 @@
+---
+title: "Cloud and DevOps journey"
+summary: "From deploying containers by hand to provisioning networks, compute and pipelines from scratch, with AWS and Kubernetes certifications as checkpoints."
+status: in-progress
+started: "2026-05-03"
+updated: "2026-10-27"
+percent: 10
+target: "Rebuild a full stack (VPC, ECS Fargate, ALB, RDS or ElastiCache) in Terraform with CI/CD, and pass AWS SAA-C03."
+milestones:
+  - { title: "Deploy a real service to EC2 by hand", done: true, date: "2026-05-03" }
+  - { title: "Phase 1 · Cloud fundamentals: VPC, subnets, IAM, security groups", done: false }
+  - { title: "Phase 2 · Dockerised Rust service on ECS Fargate behind an ALB", done: false }
+  - { title: "Phase 3 · Rebuild everything in Terraform", done: false }
+  - { title: "Phase 4 · CI/CD with GitHub Actions, secrets, CloudWatch", done: false }
+  - { title: "AWS Solutions Architect Associate (SAA-C03)", done: false }
+  - { title: "Certified Kubernetes Administrator (CKA)", done: false }
+log:
+  - { date: "2026-05-03", note: "Deployed the personal RAG service to a t3.micro in ap-south-1 with Docker. Learned security groups and SSH the hard way." }
+  - { date: "2026-10-27", note: "Roadmap agreed; next concrete step is a manual VPC with public and private subnets and a bastion host." }
+order: 30
+---
+
+The rule for this journey: never click something in the console without asking whether it could have been Terraform.

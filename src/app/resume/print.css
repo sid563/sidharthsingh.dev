@@ -1,0 +1,57 @@
+/* Printable resume: hides site chrome, flattens colours, keeps entries together. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 16mm;
+  }
+
+  /* Site header and footer live outside <main>; page-level <header>s stay. */
+  header:not(main header),
+  footer:not(main footer) {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10.5pt;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  * {
+    box-shadow: none !important;
+    background-image: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  .text-brand,
+  .text-muted-foreground {
+    color: #333 !important;
+  }
+
+  .resume-section {
+    border-color: #ddd !important;
+  }
+
+  .resume-entry {
+    break-inside: avoid;
+  }
+
+  .resume-entry li {
+    break-inside: avoid;
+  }
+
+  .resume-section > h2 {
+    break-after: avoid;
+  }
+}

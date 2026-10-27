@@ -1,0 +1,94 @@
+---
+title: "Inbound mail agents: anchor, classify, act"
+summary: "An LLM-assisted pipeline that reads every email the fulfilment platform receives, works out which order or shipment it belongs to without trusting the model to decide, routes it to one of 16 plug-in handlers, and dispatches the resulting action through a transactional outbox."
+date: "2026-10-20"
+status: in-progress
+featured: true
+kind: work
+org: "1buy.ai"
+role: "Backend engineer, designed and built the pipeline"
+stack: [Python, FastAPI, PostgreSQL, Microsoft Graph, Claude API, Groq, Transactional outbox]
+metrics:
+  - { label: "Handlers", value: "16, auto-discovered" }
+  - { label: "Model calls per mail", value: "0 to 2" }
+  - { label: "Outcomes recorded", value: "4 explicit dispositions" }
+order: 25
+---
+
+## Context
+
+Fulfilment for a B2B procurement platform runs on email. Suppliers confirm readiness, carriers and
+freight forwarders send documents, labs return test reports, customs brokers raise duty, escrow
+providers ask for consent. Before this, a person read an inbox, worked out what each mail was about,
+and re-typed the result into the system. The goal was to make the platform read its own mail, while
+keeping a hard line between what a model may *read* and what the system is willing to *believe*.
+
+## The flow
+
+```
+fetched mail
+   │
+   ├─ 1. anchor      which order, lot or shipment is this about?  (cheapest first)
+   │                 In-Reply-To → thread id → our own reference patterns → model, last
+   │
+   ├─ 2. classify    one model call picks a broad category from the registered taxonomy,
+   │                 skipped entirely when the mail answers a template we sent
+   │
+   ├─ 3. resolve     the matching handler decides the exact action and builds its payload,
+   │                 sub-classifying with its own model choice if it needs to
+   │
+   └─ 4. dispatch    the action is published as an outbox event; the domain context that
+                     owns it subscribes by name and does the real work
+```
+
+Every exit writes a disposition: *actioned*, *no action needed*, *no rule*, or *no anchor*. Those used
+to be indistinguishable on the row, and "duty is generated, please pay" sat unread beside "okay,
+fine". Only *no anchor* is a human's problem; the rest are either success or engineering's.
+
+## Design rules
+
+- **The model widens what we can read, never what we believe.** When a mail cannot be anchored by
+  headers or by the identifier shapes we mint ourselves, a model may propose candidate references.
+  Code then looks each one up and anchors only on an exact, single-row match. A hallucinated
+  reference matches nothing and is discarded. A real one that matches two rows is discarded too,
+  because it does not identify. Filing a lab report against the wrong lot is worse than filing it
+  against none.
+- **Facts we already have beat facts a model infers.** A reply to a template we sent is claimed by
+  its handler without any model call. The template names the kind of reply to expect, which is a far
+  firmer signal than anything inferred from prose.
+- **A handler is one file.** It declares a category and a one-paragraph description, which becomes
+  its contract with the stage-one classifier, and implements `resolve`. Handlers are auto-discovered
+  and a duplicate category fails loud at startup, so several people can add handlers in parallel
+  without touching shared code.
+- **Actions are event names, not imports.** A handler never imports a domain context. It emits an
+  action name; whoever owns that action subscribes to it in their own task registry. The mail
+  context stays decoupled from orders, logistics, testing, customs and escrow.
+- **Return nothing when unsure.** Leaving a mail processed-without-action is cheaper than firing the
+  wrong action. The disposition makes the gap visible for the next pass.
+
+## Operational details
+
+- Every step asks a router for its model. Operations map step to `provider:model` in config, so a
+  cheap model routes and a stronger one extracts, and swapping either is a config change. Providers
+  today are Groq-hosted Llama and Claude, plus a no-network stub so an environment with no keys
+  still runs with everything marked unknown instead of crashing.
+- Provider calls back off on throttling and overload responses and honour `Retry-After`; ordinary
+  client errors are not retried, because retrying our own mistake four times just hides the bug.
+- Handlers receive a read-only view of the mail and no database handle, which keeps them
+  deterministic to test: inject a fake router that returns canned JSON and run the pipeline end to
+  end with no network.
+- Attachments are flagged, not opened, at classification time. Deciding whether a file is a
+  commercial invoice or a packing list needs both the mail text and the filenames, so that happens in
+  the subscriber that has both.
+
+## Where it stands
+
+Sixteen handlers cover supplier quotes, goods readiness, logistics and customs correspondence, lab
+testing replies, approval replies and the escrow lifecycle. The pipeline is in user acceptance
+testing with the operations team and the handler count is still growing. This is live work, so the
+write-up stays at this level of detail.
+
+<Callout type="tip" title="The one-line version">
+Anchor cheaply, let a model read only what nothing else can, verify everything it says against the
+database, and keep handlers so small that adding one is a single file.
+</Callout>

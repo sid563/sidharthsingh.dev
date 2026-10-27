@@ -1,0 +1,70 @@
+import type { Metadata } from "next";
+import { ExternalLinkIcon } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { Container } from "@/components/container";
+import { PageHeader } from "@/components/page-header";
+import { PrintButton } from "@/components/resume/print-button";
+import {
+  ContactLine,
+  Credentials,
+  Education,
+  Experience,
+  SelectedProjects,
+  Skills,
+  Summary,
+} from "@/components/resume/resume-sections";
+import { resume } from "@/data/resume";
+import { site } from "@/data/site";
+import { documents } from "@/data/links";
+import { getProject } from "@/lib/content";
+import "./print.css";
+
+export const metadata: Metadata = {
+  title: "Resume",
+  description: `${resume.name}: ${resume.headline}.`,
+};
+
+export default function ResumePage() {
+  const projects = resume.projectSlugs
+    .map((slug) => getProject(slug))
+    .filter((project) => project !== null);
+
+  return (
+    <Container className="pb-8">
+      <PageHeader eyebrow="Resume" title={resume.name} description={resume.headline} className="pb-6">
+        <PrintButton />
+        {documents.resume.url ? (
+          <a
+            href={documents.resume.path}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonVariants({ variant: "outline", className: "print:hidden" })}
+          >
+            Original PDF
+            <ExternalLinkIcon />
+          </a>
+        ) : null}
+        <a
+          href={site.linkedin}
+          target="_blank"
+          rel="noreferrer"
+          className={buttonVariants({ variant: "outline", className: "print:hidden" })}
+        >
+          LinkedIn
+          <ExternalLinkIcon />
+        </a>
+      </PageHeader>
+
+      <div className="mb-8">
+        <ContactLine />
+      </div>
+
+      <Summary />
+      <Experience />
+      <Education />
+      <Skills />
+      <Credentials />
+      <SelectedProjects projects={projects} />
+    </Container>
+  );
+}

@@ -1,0 +1,28 @@
+---
+title: "Why I am learning Postgres from the inside out"
+summary: "I have shipped on MongoDB for two years. Postgres is now in my daily work, and I decided to learn it internals-first rather than syntax-first. Here is the plan and the reasoning."
+date: "2026-10-27"
+tags: [postgres, learning-in-public]
+---
+
+For two years most of my production data work was MongoDB: aggregation pipelines, compound indexes, Decimal128 everywhere money shows up. Then the order-fulfilment service I work on landed on PostgreSQL, and I noticed I could write the SQL but could not explain what the planner would do with it.
+
+So I set up an eight-week course for myself, with a tutor that writes the assignments and reviews the notes, and I ordered it internals first:
+
+1. Lab and system catalogs
+2. Architecture and the life of a query
+3. Storage: pages, tuples, TOAST
+4. MVCC and locks
+5. Indexes
+6. The planner (two weeks)
+7. WAL, memory and durability
+8. Features worth knowing
+9. Observability and operations
+
+The bet is simple. If I understand how a tuple is laid out on a page and how MVCC decides what a transaction can see, then every feature on top of that becomes a consequence rather than a fact to memorise.
+
+Progress is tracked publicly on the [progress page](/progress/postgres-internals). The honest number at the time of writing is low, and that is the point of writing it down.
+
+<Callout type="tip" title="Books">
+Egor Rogov's *PostgreSQL 14 Internals* and Hironobu Suzuki's *The Internals of PostgreSQL* are the two core texts.
+</Callout>

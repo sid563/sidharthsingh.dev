@@ -1,0 +1,31 @@
+---
+title: "One pricing formula, two runtimes: Rust to WebAssembly"
+summary: "Wrote the shared pricing and formula logic once in Rust and compiled it to WebAssembly, so the TypeScript and Rust codebases stopped drifting apart on the numbers that matter most."
+date: "2026-09-15"
+status: shipped
+featured: true
+kind: work
+org: "1buy.ai"
+role: "Backend engineer"
+stack: [Rust, WebAssembly, TypeScript, NestJS]
+metrics:
+  - { label: "Source of truth", value: "One Rust crate" }
+  - { label: "Consumers", value: "Rust services + TypeScript services" }
+  - { label: "Boundary", value: "Columnar Float64Array" }
+order: 20
+---
+
+## Context
+
+Pricing logic lived in two places: TypeScript services that serve the product, and Rust services that do heavy computation. Every formula change meant two implementations and a slow drift between them.
+
+## Approach
+
+- Moved the formulas into a single Rust crate with a small, pure API.
+- Rust services call it natively. TypeScript services call the same crate compiled to WebAssembly.
+- Passed data across the WASM boundary as columnar typed arrays rather than per-row objects, which keeps the call cheap for large batches.
+- Added a parity test that runs the same inputs through both consumers and fails if the outputs differ.
+
+## What I learned
+
+Not everything belongs in WASM. Formulas that must run inside a MongoDB aggregation pipeline still have to be expressed in the pipeline language, so the crate is the source of truth for the logic, and the pipeline version is checked against it.

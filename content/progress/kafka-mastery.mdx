@@ -1,0 +1,25 @@
+---
+title: "Kafka mastery in Rust"
+summary: "One evolving pipeline (order events → validated → priced → customer totals, plus a dead-letter topic) built from scratch with rdkafka, growing through nine phases of concept, build, experiment and mastery check."
+status: in-progress
+started: "2026-06-22"
+updated: "2026-10-27"
+percent: 20
+target: "Understand every knob: partitions and offsets, delivery semantics, exactly-once, consumer-group internals, broker operations, and how it all fails."
+milestones:
+  - { title: "Phase 0 · KRaft cluster in Docker, Rust toolchain", done: true, date: "2026-06-22" }
+  - { title: "Phase 1 · Log, offset and partition model", done: false }
+  - { title: "Phase 2 · Producers: batching, acks, idempotence", done: false }
+  - { title: "Phase 3 · Consumer groups and rebalancing", done: false }
+  - { title: "Phase 4 · Delivery semantics, exactly-once, dead-letter queue", done: false }
+  - { title: "Phase 5 · Schemas and registry", done: false }
+  - { title: "Phase 6 · Three-broker internals and operations", done: false }
+  - { title: "Phase 7 · Stream-processing patterns", done: false }
+  - { title: "Phase 8 · Performance, lag tuning, failure drills, capstone", done: false }
+log:
+  - { date: "2026-06-22", note: "Kicked off. Chose Rust and rdkafka to stay close to the production services I work on." }
+  - { date: "2026-10-27", note: "Progress figure is a placeholder until the roadmap file is reconciled with this page." }
+order: 20
+---
+
+Phases 0 to 4 are the load-bearing sixty percent. Everything after that is depth.

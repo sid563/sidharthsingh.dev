@@ -1,0 +1,55 @@
+---
+title: "Bulk orders, multi-channel fulfilment and carrier integrations for a shipping platform"
+summary: "Designed and owned the B2B Bulk Orders and Purchase Requisition flows in RapidShyp's Order Management System, built Rust (Actix Web) microservices on the hot paths, and wired Kafka pipelines and carrier integrations so sellers on multiple sales channels ship through one platform."
+date: "2025-06-01"
+status: shipped
+featured: false
+kind: work
+org: "RapidShyp (Om Logistics)"
+role: "Software Engineer"
+stack: [Rust, Actix Web, Tokio, Java, Kafka, MongoDB, MySQL, Redis, TiKV, etcd, React, Next.js]
+metrics:
+  - { label: "Hot-path services", value: "Rust (Actix Web on Tokio)" }
+  - { label: "Messaging", value: "Kafka event streams" }
+  - { label: "Recognition", value: "1st place hackathon · Customer Obsession Award" }
+order: 40
+---
+
+## Context
+
+RapidShyp is a B2B shipping platform. Sellers bring orders from marketplaces and their own
+storefronts, ship from several warehouses, and hand parcels to multiple carriers. The platform's job
+is to make all of that look like one order lifecycle: ingest, validate, create shipments, book
+carriers, track, and keep every system in agreement about the current status.
+
+## What I built
+
+- **Bulk Orders, end to end.** Upload and validation of hundreds of orders at once, multi-seller
+  shipment creation, and orchestration across warehouses, with Purchase Requisition workflows and
+  approval steps for the B2B side.
+- **Multi-channel ingestion.** Orders from marketplace and storefront channels flow into the same
+  Order Management System pipeline, so one fulfilment path and one set of logistics integrations
+  serve every channel.
+- **Carrier and logistics integrations.** Third-party carrier APIs for shipment creation, tracking
+  and status updates, behind a service boundary so a new carrier is an adapter rather than a rewrite.
+- **Kafka event streams** between services for real-time order processing, shipment status
+  synchronisation and multi-seller fulfilment, so downstream systems react to events instead of
+  polling.
+- **The Warehouse Management System frontend** in React and Next.js, used daily by operations teams.
+
+## Engineering notes
+
+- Hot-path services in **Rust with Actix Web on the Tokio runtime**: async handlers, serde-typed
+  domain models, and backpressure-aware worker pools, which improved API concurrency and throughput
+  while cutting latency under peak shipping loads. Java services alongside where the ecosystem
+  called for it.
+- **Redis** for low-latency caching, **TiKV and etcd** for distributed key-value storage, service
+  coordination and configuration.
+- **MongoDB and MySQL** schema and query tuning for high-volume logistics read and write paths.
+
+## Outcome
+
+Shipped to production and used daily by operations. Along the way: first place across all
+engineering teams in the 2025 internal hackathon, for an innovative prototype built under tight
+time constraints, and the Customer Obsession Award for exceptional feature ownership, rapid
+execution and reliable production delivery.
