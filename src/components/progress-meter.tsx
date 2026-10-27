@@ -43,7 +43,7 @@ export function ProgressMeter({
         )}
       >
         <div
-          className="h-full rounded-full bg-brand transition-[width] duration-700 ease-out"
+          className="meter-fill h-full rounded-full bg-brand transition-[width] duration-700 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>

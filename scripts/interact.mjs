@@ -1,6 +1,24 @@
 import { chromium } from "playwright-core";
+import fs from "node:fs";
 
 const base = process.env.BASE ?? "http://localhost:3111";
+
+// Expected project counts come from the content folder, so adding a project
+// never breaks this suite. Drafts are hidden in production builds.
+const projectsDir = new URL("../content/projects/", import.meta.url);
+const byKind = {};
+for (const f of fs.readdirSync(projectsDir)) {
+  if (!f.endsWith(".mdx")) continue;
+  const src = fs.readFileSync(new URL(f, projectsDir), "utf8");
+  if (/^draft:\s*true/m.test(src)) continue;
+  const kind = (src.match(/^kind:\s*["']?(\w+)/m) ?? [])[1] ?? "unknown";
+  byKind[kind] = (byKind[kind] ?? 0) + 1;
+}
+const expected = {
+  all: Object.values(byKind).reduce((a, b) => a + b, 0),
+  personal: byKind.personal ?? 0,
+  academic: byKind.academic ?? 0,
+};
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const results = [];
 const test = async (name, fn) => {
@@ -12,7 +30,11 @@ const test = async (name, fn) => {
   }
 };
 
-const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "light" });
+const ctx = await browser.newContext({
+  viewport: { width: 1440, height: 900 },
+  colorScheme: "light",
+  permissions: ["clipboard-read", "clipboard-write"],
+});
 const page = await ctx.newPage();
 const pageErrors = [];
 page.on("pageerror", (e) => pageErrors.push(e.message.slice(0, 160)));
@@ -48,16 +70,16 @@ await test("Search button opens the palette and Escape closes it", async () => {
   await page.locator("[data-slot=command-input]").waitFor({ state: "hidden", timeout: 3000 });
 });
 
-await test("project filter tabs narrow the grid (Personal = 1, Academic = 1, All = 6)", async () => {
+await test(`project filter tabs narrow the grid (Personal = ${expected.personal}, Academic = ${expected.academic}, All = ${expected.all})`, async () => {
   await page.goto(`${base}/projects`, { waitUntil: "networkidle" });
   const cards = () => page.locator("main a[href^='/projects/']").count();
-  if ((await cards()) !== 6) throw new Error(`All shows ${await cards()}`);
+  if ((await cards()) !== expected.all) throw new Error(`All shows ${await cards()}`);
   await page.getByRole("tab", { name: /Personal/ }).click();
   await page.waitForTimeout(400);
-  if ((await cards()) !== 1) throw new Error(`Personal shows ${await cards()}`);
+  if ((await cards()) !== expected.personal) throw new Error(`Personal shows ${await cards()}`);
   await page.getByRole("tab", { name: /Academic/ }).click();
   await page.waitForTimeout(400);
-  if ((await cards()) !== 1) throw new Error(`Academic shows ${await cards()}`);
+  if ((await cards()) !== expected.academic) throw new Error(`Academic shows ${await cards()}`);
 });
 
 await test("writing tag filter narrows the list", async () => {
@@ -129,6 +151,48 @@ await test("every internal link on every page resolves (crawl)", async () => {
   results.push(["INFO", `crawled ${seen.size} internal pages: ${[...seen].join(" ")}`]);
   if (bad.length) throw new Error(bad.join(", "));
 });
+await test("keyboard: g then w goes to Work, ? opens the shortcuts dialog", async () => {
+  await page.goto(`${base}/`, { waitUntil: "networkidle" });
+  await page.keyboard.press("g");
+  await page.keyboard.press("w");
+  await page.waitForURL(/\/projects$/, { timeout: 5000 });
+  await page.keyboard.press("?");
+  const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+  await dialog.waitFor({ state: "visible", timeout: 3000 });
+  await page.keyboard.press("Escape");
+  await dialog.waitFor({ state: "hidden", timeout: 3000 });
+});
+
+await test("every project card and page carries a system sketch with moving packets", async () => {
+  await page.goto(`${base}/projects`, { waitUntil: "networkidle" });
+  const cards = await page.locator("main a[href^='/projects/']").count();
+  const thumbs = await page.locator("main a[href^='/projects/'] svg.sketch").count();
+  if (thumbs !== cards) throw new Error(`${thumbs} sketches for ${cards} cards`);
+  await page.goto(`${base}/projects/tokio-job-scheduler`, { waitUntil: "networkidle" });
+  const packets = await page.locator("svg.sketch-full .sketch-packet").count();
+  if (packets === 0) throw new Error("no packets on the project page sketch");
+});
+
+await test("code blocks get a copy button that reports Copied", async () => {
+  await page.goto(`${base}/projects/inbound-mail-agents`, { waitUntil: "networkidle" });
+  const button = page.locator(".code-block-copy").first();
+  await button.hover();
+  await button.click();
+  await page.waitForSelector(".code-block-copy[data-copied]", { timeout: 3000 });
+});
+
+await test("404 suggests the closest real route", async () => {
+  await page.goto(`${base}/projects/tokio-job-schedule`, { waitUntil: "networkidle" });
+  await page.locator(".not-found-log a[href='/projects/tokio-job-scheduler']").waitFor({ state: "visible", timeout: 3000 });
+});
+
+await test("footer shows the deploy commit and the local time", async () => {
+  await page.goto(`${base}/`, { waitUntil: "networkidle" });
+  const commits = await page.locator("footer a[href*='/commit/']").count();
+  await page.waitForFunction(() => /\d{2}:\d{2} IST/.test(document.querySelector("footer")?.textContent ?? ""), null, { timeout: 3000 });
+  if (commits !== 1) throw new Error(`${commits} commit links`);
+});
+
 await ctx.close();
 
 const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: "dark", isMobile: true, hasTouch: true });

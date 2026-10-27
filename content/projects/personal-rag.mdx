@@ -13,6 +13,20 @@ metrics:
   - { label: "Deploy", value: "Docker on EC2, ap-south-1" }
 links:
   - { label: "GitHub", href: "https://github.com/sid563" }
+diagram:
+  nodes:
+    - { id: docs, label: "Documents", kind: file, note: "chunked" }
+    - { id: user, label: "Question", kind: client }
+    - { id: nest, label: "NestJS service", kind: service, note: "Docker on EC2" }
+    - { id: hf, label: "Hugging Face", kind: model, note: "embeddings" }
+    - { id: atlas, label: "Atlas vector search", kind: db, note: "MongoDB" }
+    - { id: groq, label: "Llama via Groq", kind: model, note: "answers" }
+  edges:
+    - { from: docs, to: nest, label: "ingest" }
+    - { from: user, to: nest }
+    - { from: nest, to: hf }
+    - { from: nest, to: atlas }
+    - { from: nest, to: groq }
 order: 50
 ---
 

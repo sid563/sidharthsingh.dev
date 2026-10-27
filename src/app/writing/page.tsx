@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getAllTags, getPosts } from "@/lib/content";
 import { Container } from "@/components/container";
 import { PageHeader } from "@/components/page-header";
@@ -21,7 +22,9 @@ export default function WritingPage() {
         title="Notes and essays"
         description="Longer-form thinking on backends, databases, concurrency and learning in public. Short notes when a short note will do."
       />
-      <WritingList posts={posts} tags={tags} />
+      <Suspense>
+        <WritingList posts={posts} tags={tags} />
+      </Suspense>
     </Container>
   );
 }

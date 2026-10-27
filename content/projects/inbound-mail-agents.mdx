@@ -12,6 +12,16 @@ metrics:
   - { label: "Handlers", value: "16, auto-discovered" }
   - { label: "Model calls per mail", value: "0 to 2" }
   - { label: "Outcomes recorded", value: "4 explicit dispositions" }
+diagram:
+  nodes:
+    - { id: inbox, label: "Inbox", kind: external, note: "Microsoft Graph" }
+    - { id: anchor, label: "Anchor · classify", kind: model, note: "0 to 2 model calls" }
+    - { id: handlers, label: "Handlers ×16", kind: worker, note: "one file each" }
+    - { id: outbox, label: "Outbox", kind: queue, note: "transactional" }
+  edges:
+    - { from: inbox, to: anchor, label: "every mail" }
+    - { from: anchor, to: handlers, label: "resolve" }
+    - { from: handlers, to: outbox, label: "dispatch" }
 order: 25
 ---
 

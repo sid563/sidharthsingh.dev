@@ -2,6 +2,9 @@ import Link from "next/link";
 import type { MDXComponents } from "mdx/types";
 import { InfoIcon, LightbulbIcon, TriangleAlertIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CodeBlock } from "@/components/mdx/code-block";
+import { Diagram } from "@/components/mdx/diagram";
+import { Figure } from "@/components/mdx/figure";
 
 type CalloutProps = {
   type?: "note" | "tip" | "warning";
@@ -28,7 +31,12 @@ export function Callout({ type = "note", title, children }: CalloutProps) {
   );
 }
 
-/** Components available inside every MDX file. Internal links use next/link. */
+/**
+ * Components available inside every MDX file.
+ * - Internal links use next/link; external ones open in a new tab.
+ * - `pre` is wrapped so every code block gets a copy button and language label.
+ * - <Callout>, <Figure> and <Diagram> are the article building blocks.
+ */
 export const mdxComponents: MDXComponents = {
   a: ({ href = "", children, ...props }) => {
     const isInternal = href.startsWith("/") || href.startsWith("#");
@@ -45,5 +53,8 @@ export const mdxComponents: MDXComponents = {
       </a>
     );
   },
+  pre: CodeBlock,
   Callout,
+  Figure,
+  Diagram,
 };

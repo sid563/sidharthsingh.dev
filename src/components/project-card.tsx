@@ -4,6 +4,7 @@ import type { Entry, Project } from "@/lib/content";
 import { formatMonth } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
+import { SystemSketch } from "@/components/sketch/system-sketch";
 import { Badge } from "@/components/ui/badge";
 
 type ProjectCardProps = {
@@ -18,14 +19,20 @@ export function ProjectCard({ project, featured = false, className }: ProjectCar
   return (
     <Link
       href={`/projects/${slug}`}
+      data-spotlight
       className={cn(
-        "group relative flex h-full flex-col justify-between gap-6 rounded-2xl border bg-card p-6 transition-all duration-300",
+        "spotlight-card group relative flex h-full flex-col justify-between gap-6 rounded-2xl border bg-card p-6 transition-all duration-300",
         "hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.18)] dark:hover:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.7)]",
         "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
         className,
       )}
     >
       <div className="space-y-3">
+        {data.diagram ? (
+          <div className="sketch-thumb" aria-hidden>
+            <SystemSketch spec={data.diagram} title={`${data.title}: system sketch`} size="card" packets={1} speed={3.4} />
+          </div>
+        ) : null}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
             <span>{data.org ?? (data.kind === "work" ? "Work" : data.kind === "personal" ? "Personal" : "Academic")}</span>

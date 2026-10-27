@@ -12,6 +12,20 @@ metrics:
   - { label: "Hot-path services", value: "Rust (Actix Web on Tokio)" }
   - { label: "Messaging", value: "Kafka event streams" }
   - { label: "Recognition", value: "1st place hackathon · Customer Obsession Award" }
+diagram:
+  nodes:
+    - { id: channels, label: "Sales channels", kind: client, note: "marketplaces · storefronts" }
+    - { id: bulk, label: "Bulk upload", kind: file, note: "hundreds of orders" }
+    - { id: oms, label: "Order management", kind: service, note: "Rust · Actix Web" }
+    - { id: kafka, label: "Kafka", kind: queue, note: "shipment status" }
+    - { id: carriers, label: "Carrier APIs", kind: external, note: "create · track" }
+    - { id: store, label: "MongoDB · MySQL", kind: db, note: "Redis · TiKV · etcd" }
+  edges:
+    - { from: channels, to: oms }
+    - { from: bulk, to: oms, label: "validate" }
+    - { from: oms, to: kafka, label: "events" }
+    - { from: oms, to: carriers }
+    - { from: oms, to: store }
 order: 40
 ---
 

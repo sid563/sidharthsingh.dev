@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRightIcon, ArrowUpRightIcon } from "lucide-react";
 import { Container } from "@/components/container";
+import { SpotlightGroup } from "@/components/spotlight";
 import { PageHeader } from "@/components/page-header";
 import { RoadmapBoard } from "@/components/roadmap-board";
 import { StatusBadge } from "@/components/status-badge";
@@ -65,11 +66,13 @@ export default function RoadmapPage() {
         <p className="pb-16 text-muted-foreground">Nothing on the roadmap yet.</p>
       ) : (
         <div className="pb-16">
-          <RoadmapBoard
-            legend={<Legend />}
-            statusView={<StatusColumns groups={byStatus} />}
-            themeView={<ThemeGroups groups={byTheme} />}
-          />
+          <SpotlightGroup>
+            <RoadmapBoard
+              legend={<Legend />}
+              statusView={<StatusColumns groups={byStatus} />}
+              themeView={<ThemeGroups groups={byTheme} />}
+            />
+          </SpotlightGroup>
         </div>
       )}
     </Container>
@@ -147,7 +150,10 @@ function RoadmapCard({ item }: { item: RoadmapEntry }) {
   const hasLinks = data.progress || data.project || data.links.length > 0;
 
   return (
-    <article className="flex h-full flex-col gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-foreground/20">
+    <article
+      data-spotlight
+      className="spotlight-card relative flex h-full flex-col gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-foreground/20"
+    >
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge status={data.status} />
         <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">

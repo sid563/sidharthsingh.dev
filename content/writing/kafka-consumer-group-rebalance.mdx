@@ -1,0 +1,160 @@
+---
+# Sample post. Shows every building block the article template supports.
+# Delete it or replace the content before flipping `draft` to false.
+title: "How a Kafka consumer group rebalances, step by step"
+summary: "What actually happens between a consumer joining a group and its first poll returning records: the coordinator, the join and sync rounds, partition assignment, and the two timeouts that decide how painful a rebalance is."
+date: "2026-11-02"
+type: article
+tags: [kafka, rust, distributed-systems]
+series: { name: "Kafka from first principles", part: 1 }
+draft: true
+---
+
+Consumer groups are the part of Kafka that most people use every day and almost nobody has watched
+happen. This post walks through one rebalance with a three-partition topic and two consumers written
+in Rust, then adds a third consumer and watches the group reshuffle.
+
+## The setup
+
+One topic, three partitions, one consumer group. The producers do not matter for this post; they
+keep writing order events while the group changes shape underneath them.
+
+<Diagram
+  title="Two consumers sharing three partitions"
+  nodes={[
+    { id: "producers", label: "Order service", kind: "service", note: "produces order.events" },
+    { id: "topic", label: "order.events", kind: "queue", note: "3 partitions" },
+    { id: "c1", label: "consumer-a", kind: "worker", note: "p0, p1" },
+    { id: "c2", label: "consumer-b", kind: "worker", note: "p2" },
+    { id: "db", label: "PostgreSQL", kind: "db", note: "customer totals" },
+  ]}
+  edges={[
+    { from: "producers", to: "topic" },
+    { from: "topic", to: "c1", label: "p0, p1" },
+    { from: "topic", to: "c2", label: "p2" },
+    { from: "c1", to: "db" },
+    { from: "c2", to: "db" },
+  ]}
+  caption="The steady state before anything changes. Each partition is owned by exactly one consumer in the group; that invariant is what a rebalance protects."
+/>
+
+The consumers are the smallest thing `rdkafka` will let you write. The three settings that matter
+for this post are highlighted.
+
+```rust title="consumer.rs" {6-8}
+use rdkafka::config::ClientConfig;
+use rdkafka::consumer::{Consumer, StreamConsumer};
+
+let consumer: StreamConsumer = ClientConfig::new()
+    .set("bootstrap.servers", "localhost:9092")
+    .set("group.id", "totals")
+    .set("session.timeout.ms", "45000")
+    .set("heartbeat.interval.ms", "3000")
+    .set("enable.auto.commit", "false")
+    .create()?;
+
+consumer.subscribe(&["order.events"])?;
+```
+
+## Joining the group
+
+A consumer does not talk to "the group". It talks to one broker, the **group coordinator**, chosen by
+hashing the group id onto the internal `__consumer_offsets` topic.[^1] Joining is a two-round
+conversation with that broker.
+
+1. **FindCoordinator.** Any broker answers with the coordinator for `totals`.
+2. **JoinGroup.** Every member sends its subscription. The coordinator waits for the whole
+   generation to join, then picks one member as the **leader** and sends it everyone's subscriptions.
+3. **SyncGroup.** The leader computes the assignment on the client side and sends it back through
+   the coordinator, which hands each member its slice.
+
+The leader doing the assignment, not the broker, is the detail that surprises people. The broker only
+brokers. That is why assignment strategy is a *client* setting, and why two consumers with different
+strategies in one group is a configuration error rather than a merge.
+
+## Partition assignment
+
+The strategy decides who gets what, and more importantly, how much movement happens when the group
+changes. The default has moved over the years.
+
+| Strategy | Movement on change | Notes |
+| --- | --- | --- |
+| `range` | High | Per-topic ranges; uneven with many topics |
+| `roundrobin` | High | Even, but everything moves |
+| `sticky` | Low | Keeps existing ownership where it can |
+| `cooperative-sticky` | Lowest | Incremental: only moved partitions are revoked |
+
+With the eager protocols (`range`, `roundrobin`, `sticky`) every member **revokes all partitions**
+at the start of a rebalance, stops processing, and waits for the new assignment. That stop-the-world
+window is the cost people mean when they say "rebalances are expensive".
+
+<Callout type="tip" title="Use cooperative-sticky unless you have a reason not to">
+With the cooperative protocol, a member keeps consuming the partitions it is going to keep. Only the
+partitions that actually move are revoked, in a second, smaller round. For most services this turns a
+multi-second pause into a blip on one or two partitions.
+</Callout>
+
+## Adding a third consumer
+
+Start `consumer-c`. Its JoinGroup bumps the group's **generation**; every heartbeat from the existing
+members now returns `REBALANCE_IN_PROGRESS`, and they rejoin. With three partitions and three
+consumers, the sticky strategy moves exactly one partition: `p1` leaves `consumer-a`.
+
+```text
+generation 7 → 8
+  consumer-a   p0 p1      →  p0
+  consumer-b   p2         →  p2
+  consumer-c   (none)     →  p1
+```
+
+Before `p1` is handed over, `consumer-a` gets a chance to commit its offset for it. If it does not,
+`consumer-c` starts from the last committed offset, and whatever `consumer-a` had processed but not
+committed is processed again. That is the at-least-once contract, and it is where idempotent
+downstream writes earn their keep.
+
+## The two timeouts that matter
+
+Everything above is triggered by membership changes the coordinator *notices*. It notices them
+through two independent clocks.
+
+- `session.timeout.ms` is the heartbeat deadline. The consumer's background thread heartbeats every
+  `heartbeat.interval.ms`; miss them for a full session timeout and the coordinator evicts the member
+  and starts a rebalance. This catches crashed processes and partitioned networks.
+- `max.poll.interval.ms` is the **processing** deadline. If your loop takes longer than this between
+  two `poll` calls, the consumer leaves the group on its own, even though its heartbeats were fine.
+  This catches a consumer that is alive but stuck.
+
+<Callout type="warning" title="The classic outage">
+A slow downstream call makes one poll loop take six minutes. `max.poll.interval.ms` is five. The
+consumer leaves, the group rebalances, the partition moves to a sibling, which hits the same slow
+call, which leaves too. The group spends the next hour rebalancing in a circle while lag climbs.
+The fix is almost never a bigger timeout; it is bounding the work per poll.
+</Callout>
+
+## What a rebalance costs, in numbers
+
+A rough model, for a service that processes a batch per poll:
+
+```sql title="lag during the rebalance window"
+select partition,
+       max(offset_end) - max(offset_committed) as lag
+from consumer_lag
+where group_id = 'totals'
+  and observed_at between :start and :end
+group by partition
+order by partition;
+```
+
+The pause is bounded by the slowest member's time to finish its in-flight batch plus one join and
+one sync round trip. On a healthy cluster the round trips are tens of milliseconds; the in-flight
+batch is whatever you made it. Which is the point of the whole post: **rebalance cost is mostly your
+batch size, not Kafka's protocol.**
+
+## Takeaways
+
+- The coordinator is a broker, the assignment is computed by a client.
+- Eager strategies stop the world; cooperative-sticky stops only what moves.
+- Two timeouts, two failure modes: heartbeats catch dead consumers, poll interval catches stuck ones.
+- Commit before you hand a partition over, and make the downstream write idempotent anyway.
+
+[^1]: The partition of `__consumer_offsets` is `hash(group.id) % offsets.topic.num.partitions`, and the leader of that partition is the coordinator. Fifty partitions by default, so coordinators spread across the cluster.

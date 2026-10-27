@@ -7,6 +7,8 @@ import { Hero } from "@/components/home/hero";
 import { NowBento } from "@/components/home/now-bento";
 import { ExpertiseSnapshot } from "@/components/home/expertise-snapshot";
 import { ContactCta } from "@/components/home/contact-cta";
+import { Principles } from "@/components/home/principles";
+import { SpotlightGroup } from "@/components/spotlight";
 import { getFeaturedProjects, getPage, getPosts, getProgress, getProjects } from "@/lib/content";
 
 export default function HomePage() {
@@ -44,6 +46,7 @@ export default function HomePage() {
             description="Systems I owned end to end. Each one has the constraints, the approach and what actually shipped."
             href="/projects"
           >
+            <SpotlightGroup>
             <FadeInStagger className="grid gap-4 md:grid-cols-2">
               {featured.map((project, index) => (
                 <FadeInItem
@@ -58,6 +61,7 @@ export default function HomePage() {
                 </FadeInItem>
               ))}
             </FadeInStagger>
+            </SpotlightGroup>
           </Section>
         ) : null}
 
@@ -79,6 +83,7 @@ export default function HomePage() {
         ) : null}
 
         <ExpertiseSnapshot />
+        <Principles />
         <ContactCta />
       </Container>
     </>

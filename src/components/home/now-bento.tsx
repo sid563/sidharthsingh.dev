@@ -5,6 +5,7 @@ import { site } from "@/data/site";
 import { formatDate, readingTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { FadeInItem, FadeInStagger } from "@/components/fade-in";
+import { SpotlightGroup } from "@/components/spotlight";
 import { ProgressMeter } from "@/components/progress-meter";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +22,9 @@ function BentoCard({ href, eyebrow, meta, className, children }: BentoCardProps)
   return (
     <Link
       href={href}
+      data-spotlight
       className={cn(
-        "group flex h-full flex-col gap-4 rounded-2xl border bg-card p-6 transition-all duration-300",
+        "spotlight-card group relative flex h-full flex-col gap-4 rounded-2xl border bg-card p-6 transition-all duration-300",
         "hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.18)] dark:hover:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.7)]",
         "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
         className,
@@ -53,6 +55,7 @@ export function NowBento({ now, project, journey, journeys, post }: NowBentoProp
   const nextMilestone = journey?.data.milestones.find((m) => !m.done) ?? null;
 
   return (
+    <SpotlightGroup>
     <FadeInStagger className="grid gap-4 md:grid-cols-6" faster>
       <FadeInItem className="md:col-span-2">
         <BentoCard
@@ -155,5 +158,6 @@ export function NowBento({ now, project, journey, journeys, post }: NowBentoProp
         </FadeInItem>
       ) : null}
     </FadeInStagger>
+    </SpotlightGroup>
   );
 }

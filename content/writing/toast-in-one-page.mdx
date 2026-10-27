@@ -1,0 +1,36 @@
+---
+# Sample note. Notes are short by definition: no table of contents, no series.
+title: "TOAST in one page"
+summary: "What PostgreSQL does with a value that will not fit in a page, and the four strategies you can set per column."
+date: "2026-11-04"
+type: note
+tags: [postgres]
+draft: true
+---
+
+A heap page is 8 KB and a tuple has to fit in one. PostgreSQL will not split a row across pages, so
+anything that threatens the limit gets handled by **The Oversized-Attribute Storage Technique**.
+
+The trigger is a tuple larger than about 2 KB (`TOAST_TUPLE_THRESHOLD`). Postgres then tries, column
+by column, largest first, to compress the value and then to move it out of line into the table's
+TOAST relation in chunks of just under 2 KB, until the tuple is small enough.
+
+```sql
+alter table documents alter column body set storage external;
+select attname, attstorage from pg_attribute
+where attrelid = 'documents'::regclass and attnum > 0;
+```
+
+| Strategy | Compress | Move out of line | Use when |
+| --- | --- | --- | --- |
+| `plain` | no | no | fixed-width types; never toasted |
+| `main` | yes | last resort | you want it inline if at all possible |
+| `extended` | yes | yes | the default for `text`, `jsonb`, `bytea` |
+| `external` | no | yes | already-compressed data, or you substring a lot |
+
+Two consequences worth knowing. Updating a row that has toasted columns does not rewrite the toasted
+value unless that column changed,[^1] so wide rows are cheaper to update than they look. And
+`external` makes `substr` on huge values fast, because Postgres can fetch only the chunks it needs
+instead of decompressing the whole thing.
+
+[^1]: The new tuple version simply points at the same TOAST chunks. The chunks are cleaned up by vacuum once no tuple version references them.

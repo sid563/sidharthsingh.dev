@@ -26,6 +26,8 @@ export const site = {
   // Set NEXT_PUBLIC_SITE_URL once a domain is bought. Used for metadata and OG images.
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://sidharthsingh.dev",
   github: "https://github.com/sid563",
+  /** Public source of this site; article pages link to their own file. */
+  repo: "https://github.com/sid563/sidharthsingh.dev",
   linkedin: "https://www.linkedin.com/in/sidharthsingh-ss563",
   availability: "Open to conversations about distributed backends and hard infrastructure problems.",
   /** Short bio paragraphs for the About page. */
@@ -34,6 +36,15 @@ export const site = {
     "At 1buy.ai I work on an ultra-small team that owns core platform flows end to end. That has meant MongoDB aggregation pipelines over 100M+ pricing documents, a Rust job scheduler built on Tokio and semaphore-bounded worker pools, shared pricing logic compiled from Rust to WebAssembly, and an order-fulfilment backend on FastAPI, PostgreSQL and Kafka.",
     "Before that I was at RapidShyp, a B2B shipping platform for marketplace and multi-channel sellers, building Rust (Actix Web) microservices, Kafka pipelines and carrier integrations for bulk order processing and order lifecycle orchestration, with MongoDB, MySQL, Redis, TiKV and etcd in the mix.",
     "Outside work I like to go one layer deeper than the job requires: PostgreSQL query planners, async runtimes, HNSW vector indexing, and the ways distributed systems fail. This site is where I keep that learning honest and in public.",
+  ],
+  /** Home page "Working principles". Each line is quoted from a project write-up on this site. */
+  principles: [
+    "Correct under load first, then fast.",
+    "Backpressure is a permit count, not a thread count.",
+    "Facts we already have beat facts a model infers.",
+    "Return nothing when unsure; the gap stays visible.",
+    "Every number verifiable, every status honest.",
+    "One layer deeper than the job requires.",
   ],
   nav: [
     { label: "Work", href: "/projects" },

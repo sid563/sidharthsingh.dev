@@ -1,0 +1,43 @@
+---
+# Sample essay. Mostly prose, a pull quote, and a figure with the placeholder image.
+title: "What a failure looks like from the outside"
+summary: "Most of what we call distributed-systems knowledge is pattern recognition: knowing which symptom belongs to which failure before you have any evidence. An argument for learning failures by their silhouettes."
+date: "2026-11-16"
+type: essay
+tags: [distributed-systems, learning-in-public]
+draft: true
+---
+
+Every distributed systems course starts from the inside. Here is a node, here is a message, here is
+the moment the message is late. It is a reasonable place to start and a terrible place to stop,
+because nobody who runs a system ever sees it from there. You see a dashboard. You see a queue that
+has started growing at a steady angle, or a p99 that has gone from flat to a staircase, or a service
+that reports healthy while doing nothing at all.
+
+> Experience is not having seen the failure. It is recognising it from the shape it leaves on a
+> graph you were not even looking at.
+
+## Silhouettes
+
+A partition and a slow disk look nothing alike from inside the system and almost identical from
+outside: both produce timeouts, both produce retries, both make the retry storm look like the cause.
+What separates the engineer who fixes it in ten minutes from the one who spends the evening is not
+theory. It is having a small catalogue of silhouettes and the discipline to check the cheap ones
+first.
+
+<Figure
+  src="/images/placeholder-architecture.svg"
+  alt="Placeholder for an architecture diagram of a three-node system with a queue, a database and a cache"
+  caption="The three-node lab from the roadmap. The real diagram goes here once the lab exists; until then this placeholder shows how a figure sits in the text."
+  width={1200}
+  height={640}
+/>
+
+## Learning them on purpose
+
+The roadmap has a failure-mode lab on it for exactly this reason: three nodes, a queue, a database, a
+cache, and a list of things to break deliberately. Partition the network. Skew a clock. Make one disk
+slow. Each time, write down what the outside looked like before writing down what happened inside.
+
+The write-ups will go here, as notes, one failure at a time. The goal is not to be surprised less. It
+is to be surprised faster, and then to know which graph to open next.

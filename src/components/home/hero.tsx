@@ -4,6 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Container } from "@/components/container";
 import { FadeIn } from "@/components/fade-in";
 import { StatStrip } from "@/components/home/stat-strip";
+import { HeroSketch } from "@/components/home/hero-sketch";
 import { site } from "@/data/site";
 import { cn } from "@/lib/utils";
 
@@ -83,8 +84,12 @@ export function Hero() {
           </div>
         </FadeIn>
 
-        <FadeIn mode="load" delay={0.7} y={16}>
-          <StatStrip stats={site.stats} className="mt-14" />
+        <FadeIn mode="load" delay={0.7} y={16} className="hidden sm:block">
+          <HeroSketch className="mt-14" />
+        </FadeIn>
+
+        <FadeIn mode="load" delay={0.8} y={16}>
+          <StatStrip stats={site.stats} className="mt-8 sm:mt-6" />
         </FadeIn>
       </Container>
     </section>

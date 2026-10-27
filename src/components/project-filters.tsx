@@ -4,6 +4,7 @@ import * as React from "react";
 import type { Entry, Project } from "@/lib/content";
 import { ProjectCard } from "@/components/project-card";
 import { FadeInItem, FadeInStagger } from "@/components/fade-in";
+import { SpotlightGroup } from "@/components/spotlight";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 /** Slug + frontmatter only; the MDX body never reaches the client. */
@@ -57,6 +58,7 @@ export function ProjectFilters({ projects }: { projects: ProjectSummary[] }) {
           Nothing here yet.
         </p>
       ) : (
+        <SpotlightGroup>
         <FadeInStagger key={kind} faster className="grid gap-4 sm:grid-cols-2">
           {visible.map((project) => (
             <FadeInItem key={project.slug} className="h-full">
@@ -68,6 +70,7 @@ export function ProjectFilters({ projects }: { projects: ProjectSummary[] }) {
             </FadeInItem>
           ))}
         </FadeInStagger>
+        </SpotlightGroup>
       )}
     </div>
   );

@@ -17,7 +17,8 @@ export function JourneyCard({ slug, journey }: JourneyCardProps) {
   return (
     <Link
       href={`/progress/${slug}`}
-      className="group flex h-full flex-col gap-4 rounded-xl border bg-card p-5 transition-colors hover:border-foreground/20 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      data-spotlight
+      className="spotlight-card group relative flex h-full flex-col gap-4 rounded-xl border bg-card p-5 transition-colors hover:border-foreground/20 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-medium leading-snug decoration-foreground/30 underline-offset-4 group-hover:underline">

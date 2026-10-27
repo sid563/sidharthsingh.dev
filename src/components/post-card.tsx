@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Entry, Post } from "@/lib/content";
+import { postTypeLabel } from "@/lib/writing";
 import { formatDate, readingTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,14 @@ export function PostCard({ post, className }: { post: Entry<Post>; className?: s
         </h3>
         <p className="line-clamp-2 text-sm text-muted-foreground">{data.summary}</p>
         <p className="flex flex-wrap items-center gap-x-2 font-mono text-[11px] text-muted-foreground">
+          <span className={cn(data.type !== "article" && "text-brand")}>{postTypeLabel[data.type]}</span>
+          <span aria-hidden>·</span>
           <span>{readingTime(body)}</span>
+          {data.series ? (
+            <span>
+              · {data.series.name}, part {data.series.part}
+            </span>
+          ) : null}
           {data.tags.map((tag) => (
             <span key={tag}>#{tag}</span>
           ))}

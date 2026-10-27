@@ -1,11 +1,20 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import type { Entry, Post } from "@/lib/content";
 import { PostCard } from "@/components/post-card";
 import { cn } from "@/lib/utils";
 
 type Tag = { tag: string; count: number };
+type TypeFilter = "all" | Post["type"];
+
+const typeFilters: { value: TypeFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "article", label: "Articles" },
+  { value: "note", label: "Notes" },
+  { value: "essay", label: "Essays" },
+];
 
 function chipClass(active: boolean) {
   return cn(
@@ -17,11 +26,28 @@ function chipClass(active: boolean) {
   );
 }
 
-/** Posts grouped by year, with a client-side tag filter. Posts arrive newest first. */
+/**
+ * Posts grouped by year with two client-side filters: the shape of the
+ * writing (article, note, essay) and a tag. `?tag=` in the URL preselects a
+ * tag so tag badges on an article can link here. Posts arrive newest first.
+ */
 export function WritingList({ posts, tags }: { posts: Entry<Post>[]; tags: Tag[] }) {
-  const [active, setActive] = React.useState<string | null>(null);
+  const params = useSearchParams();
+  const initialTag = params.get("tag");
+  const [tag, setTag] = React.useState<string | null>(
+    initialTag && tags.some((t) => t.tag === initialTag) ? initialTag : null,
+  );
+  const [type, setType] = React.useState<TypeFilter>("all");
 
-  const visible = active ? posts.filter((post) => post.data.tags.includes(active)) : posts;
+  const typeCounts = React.useMemo(() => {
+    const map = new Map<TypeFilter, number>([["all", posts.length]]);
+    for (const post of posts) map.set(post.data.type, (map.get(post.data.type) ?? 0) + 1);
+    return map;
+  }, [posts]);
+
+  const visible = posts.filter(
+    (post) => (type === "all" || post.data.type === type) && (tag === null || post.data.tags.includes(tag)),
+  );
 
   const byYear = React.useMemo(() => {
     const groups = new Map<string, Entry<Post>[]>();
@@ -32,37 +58,48 @@ export function WritingList({ posts, tags }: { posts: Entry<Post>[]; tags: Tag[]
     return [...groups.entries()];
   }, [visible]);
 
+  const presentTypes = typeFilters.filter((t) => t.value === "all" || (typeCounts.get(t.value) ?? 0) > 0);
+
   return (
     <div className="space-y-10">
-      {tags.length > 0 ? (
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by tag">
-          <button
-            type="button"
-            aria-pressed={active === null}
-            onClick={() => setActive(null)}
-            className={chipClass(active === null)}
-          >
-            All
-            <span className="tabular-nums opacity-70">{posts.length}</span>
-          </button>
-          {tags.map(({ tag, count }) => (
-            <button
-              key={tag}
-              type="button"
-              aria-pressed={active === tag}
-              onClick={() => setActive(active === tag ? null : tag)}
-              className={chipClass(active === tag)}
-            >
-              #{tag}
-              <span className="tabular-nums opacity-70">{count}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <div className="space-y-3">
+        {presentTypes.length > 2 ? (
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by kind">
+            {presentTypes.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                aria-pressed={type === item.value}
+                onClick={() => setType(item.value)}
+                className={chipClass(type === item.value)}
+              >
+                {item.label}
+                <span className="tabular-nums opacity-70">{typeCounts.get(item.value) ?? 0}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {tags.length > 0 ? (
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by tag">
+            {tags.map(({ tag: t, count }) => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={tag === t}
+                onClick={() => setTag(tag === t ? null : t)}
+                className={chipClass(tag === t)}
+              >
+                #{t}
+                <span className="tabular-nums opacity-70">{count}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       {visible.length === 0 ? (
         <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          Nothing tagged #{active} yet.
+          Nothing here yet.
         </p>
       ) : null}
 

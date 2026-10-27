@@ -11,6 +11,17 @@ metrics:
   - { label: "R²", value: "0.9607" }
   - { label: "Dataset", value: "12,859 SMILES entries" }
   - { label: "Model", value: "D-MPNN + ensemble" }
+diagram:
+  nodes:
+    - { id: data, label: "SMILES dataset", kind: file, note: "12,859 molecules" }
+    - { id: mpnn, label: "D-MPNN", kind: model, note: "message passing" }
+    - { id: feats, label: "Substructure features", kind: service }
+    - { id: ens, label: "Ensemble", kind: model, note: "ADME prediction" }
+  edges:
+    - { from: data, to: mpnn }
+    - { from: data, to: feats }
+    - { from: mpnn, to: ens }
+    - { from: feats, to: ens }
 order: 60
 ---
 

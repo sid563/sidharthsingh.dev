@@ -12,6 +12,20 @@ metrics:
   - { label: "Workflow", value: "PO → shipment → customs" }
   - { label: "Integrations", value: "DHL carrier API, Microsoft 365 mail" }
   - { label: "Documents", value: "Packing lists, Bills of Entry parsed by Claude" }
+diagram:
+  nodes:
+    - { id: po, label: "Purchase order", kind: client, note: "shipment · customs" }
+    - { id: docs, label: "Trade documents", kind: file, note: "parsed by Claude" }
+    - { id: api, label: "Fulfilment service", kind: service, note: "FastAPI · explicit states" }
+    - { id: kafka, label: "Kafka", kind: queue, note: "domain events" }
+    - { id: pg, label: "PostgreSQL", kind: db, note: "append-only log" }
+    - { id: dhl, label: "DHL", kind: external, note: "booking · tracking" }
+  edges:
+    - { from: po, to: api }
+    - { from: docs, to: api, dashed: true }
+    - { from: api, to: kafka, label: "publish" }
+    - { from: api, to: pg }
+    - { from: api, to: dhl }
 order: 30
 ---
 

@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ChatWidget } from "@/components/chat-widget";
+import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { site } from "@/data/site";
 import "./globals.css";
 
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <main className="flex-1">{children}</main>
             <SiteFooter />
             <ChatWidget />
+            <KeyboardShortcuts />
           </TooltipProvider>
         </ThemeProvider>
       </body>

@@ -1,0 +1,44 @@
+---
+# Sample post, part 2 of the sample series. Keeps the series navigation populated.
+title: "At-most, at-least, exactly: what the producer actually promises"
+summary: "The three delivery guarantees as they look from the producer side: acks, retries, idempotent producers, and where exactly-once stops being a producer setting and becomes an application design."
+date: "2026-11-09"
+type: article
+tags: [kafka, distributed-systems]
+series: { name: "Kafka from first principles", part: 2 }
+draft: true
+---
+
+Part one followed a consumer group through a rebalance. This part moves to the other end of the
+topic and asks a simpler-sounding question: when `send` returns, what do you know?
+
+## acks
+
+`acks` controls how many replicas must have the record before the broker answers.
+
+```rust title="producer.rs"
+let producer: FutureProducer = ClientConfig::new()
+    .set("bootstrap.servers", "localhost:9092")
+    .set("acks", "all")
+    .set("enable.idempotence", "true")
+    .create()?;
+```
+
+- `acks=0`: fire and forget. At-most-once, fastest, and the record may be lost before any broker
+  sees it.
+- `acks=1`: the partition leader has it. A leader crash before replication loses it.
+- `acks=all`: every in-sync replica has it. Combined with `min.insync.replicas=2` on the topic, a
+  single broker failure cannot lose an acknowledged write.
+
+## Retries and duplicates
+
+With retries on and idempotence off, a timed-out request that actually succeeded will be sent again
+and land twice. The idempotent producer fixes exactly this: each batch carries a producer id and a
+sequence number, and the broker drops a batch it has already appended.
+
+## Where exactly-once ends
+
+Idempotence makes a single partition write exactly-once *from the producer's point of view*.
+Transactions extend that across partitions and to the consumer's offset commit. Neither reaches your
+database. The moment a consumer writes to PostgreSQL and then commits its offset, you are back to
+designing for at-least-once on that boundary, which is what part three is about.

@@ -12,6 +12,15 @@ metrics:
   - { label: "Runtime", value: "Tokio" }
   - { label: "Concurrency model", value: "Arc<Semaphore> worker pools" }
   - { label: "Deployment", value: "Multi-instance safe" }
+diagram:
+  nodes:
+    - { id: mongo, label: "MongoDB", kind: db, note: "job queue" }
+    - { id: sched, label: "Scheduler ×N", kind: service, note: "atomic claim" }
+    - { id: pool, label: "Worker pools", kind: worker, note: "Arc<Semaphore> per job kind" }
+  edges:
+    - { from: mongo, to: sched, label: "due jobs" }
+    - { from: sched, to: pool, label: "permits" }
+    - { from: pool, to: mongo, label: "result", dashed: true }
 order: 10
 ---
 

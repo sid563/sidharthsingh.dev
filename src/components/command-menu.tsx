@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
+import { useThemeTransition } from "@/lib/use-theme-transition";
 import {
   FileTextIcon,
   FolderGitIcon,
@@ -14,6 +14,7 @@ import {
   SunMoonIcon,
   UserIcon,
   FileBadgeIcon,
+  KeyboardIcon,
 } from "lucide-react";
 import {
   Command,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { site } from "@/data/site";
+import { OPEN_COMMAND_MENU, OPEN_SHORTCUTS, shortcutFor } from "@/lib/shortcuts";
 
 export type CommandGroupName = "Pages" | "Projects" | "Writing" | "Progress";
 export type CommandEntry = { label: string; href: string; group: CommandGroupName; hint?: string };
@@ -54,7 +56,7 @@ const pageIcons: Record<string, React.ComponentType<{ className?: string }>> = {
 export function CommandMenu({ entries }: { entries: CommandEntry[] }) {
   const [open, setOpen] = React.useState(false);
   const router = useRouter();
-  const { resolvedTheme, setTheme } = useTheme();
+  const { toggleTheme } = useThemeTransition();
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -63,8 +65,13 @@ export function CommandMenu({ entries }: { entries: CommandEntry[] }) {
         setOpen((o) => !o);
       }
     };
+    const onOpen = () => setOpen(true);
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    window.addEventListener(OPEN_COMMAND_MENU, onOpen);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener(OPEN_COMMAND_MENU, onOpen);
+    };
   }, []);
 
   const run = React.useCallback((fn: () => void) => {
@@ -120,6 +127,9 @@ export function CommandMenu({ entries }: { entries: CommandEntry[] }) {
                         {item.hint ? (
                           <span className="ml-2 truncate text-xs text-muted-foreground">{item.hint}</span>
                         ) : null}
+                        {group === "Pages" && shortcutFor(item.href) ? (
+                          <CommandShortcut>{shortcutFor(item.href)}</CommandShortcut>
+                        ) : null}
                       </CommandItem>
                     );
                   })}
@@ -129,11 +139,19 @@ export function CommandMenu({ entries }: { entries: CommandEntry[] }) {
             <CommandGroup heading="Actions">
               <CommandItem
                 value="toggle theme dark light"
-                onSelect={() => run(() => setTheme(resolvedTheme === "dark" ? "light" : "dark"))}
+                onSelect={() => run(() => toggleTheme())}
               >
                 <SunMoonIcon />
                 Toggle theme
                 <CommandShortcut>T</CommandShortcut>
+              </CommandItem>
+              <CommandItem
+                value="keyboard shortcuts help"
+                onSelect={() => run(() => window.dispatchEvent(new Event(OPEN_SHORTCUTS)))}
+              >
+                <KeyboardIcon />
+                Keyboard shortcuts
+                <CommandShortcut>?</CommandShortcut>
               </CommandItem>
               <CommandItem value="github" onSelect={() => run(() => window.open(site.github, "_blank"))}>
                 <ExternalLinkIcon />

@@ -13,9 +13,11 @@ import path from "node:path";
 import matter from "gray-matter";
 import { z } from "zod";
 import { statuses, statusOrder } from "@/lib/status";
+import { postTypes } from "@/lib/writing";
 
 // Re-exported so existing imports keep working; client code should import from "@/lib/status".
 export { statuses, statusLabel, statusOrder, type Status } from "@/lib/status";
+export { postTypes, postTypeLabel, type PostType } from "@/lib/writing";
 
 const CONTENT_DIR = path.join(process.cwd(), "content");
 
@@ -30,6 +32,51 @@ export const statusSchema = z.enum(statuses);
 const linkSchema = z.object({ label: z.string(), href: z.string() });
 export type ContentLink = z.infer<typeof linkSchema>;
 
+/**
+ * A system sketch: the small declarative diagram drawn on project cards and
+ * project pages (see src/lib/diagram.ts). Nodes are laid out left to right
+ * by following the edges, so only ids, labels and kinds are needed.
+ */
+export const diagramNodeKinds = [
+  "client",
+  "service",
+  "worker",
+  "queue",
+  "db",
+  "cache",
+  "external",
+  "model",
+  "file",
+] as const;
+
+export const diagramSchema = z.object({
+  nodes: z
+    .array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        kind: z.enum(diagramNodeKinds).default("service"),
+        /** One short line under the label, e.g. "Arc<Semaphore>". */
+        note: z.string().optional(),
+      }),
+    )
+    .min(2),
+  edges: z
+    .array(
+      z.object({
+        from: z.string(),
+        to: z.string(),
+        label: z.string().optional(),
+        /** Dashed edge for "sometimes" paths (retries, fallbacks). */
+        dashed: z.boolean().default(false),
+      }),
+    )
+    .min(1),
+});
+
+export type Diagram = z.infer<typeof diagramSchema>;
+export type DiagramNodeKind = (typeof diagramNodeKinds)[number];
+
 export const projectSchema = z.object({
   title: z.string(),
   summary: z.string(),
@@ -42,6 +89,8 @@ export const projectSchema = z.object({
   stack: z.array(z.string()).default([]),
   metrics: z.array(z.object({ label: z.string(), value: z.string() })).default([]),
   links: z.array(linkSchema).default([]),
+  /** Optional system sketch shown on the card and at the top of the page. */
+  diagram: diagramSchema.optional(),
   order: z.number().default(100),
   draft: z.boolean().default(false),
 });
@@ -50,7 +99,12 @@ export const postSchema = z.object({
   title: z.string(),
   summary: z.string(),
   date: dateString,
+  /** Shown as "Updated …" when it differs from `date`. */
+  updated: dateString.optional(),
+  type: z.enum(postTypes).default("article"),
   tags: z.array(z.string()).default([]),
+  /** Multi-part writing: every post with the same series name is linked. */
+  series: z.object({ name: z.string(), part: z.number().int().min(1) }).optional(),
   draft: z.boolean().default(false),
 });
 
@@ -159,6 +213,28 @@ export function getPosts(): Entry<Post>[] {
 
 export function getPost(slug: string): Entry<Post> | null {
   return getPosts().find((p) => p.slug === slug) ?? null;
+}
+
+/** Other parts of the same series, in part order (includes the given post). */
+export function getSeries(name: string): Entry<Post>[] {
+  return getPosts()
+    .filter((p) => p.data.series?.name === name)
+    .sort((a, b) => (a.data.series?.part ?? 0) - (b.data.series?.part ?? 0));
+}
+
+/** Up to `limit` other posts sharing the most tags, newest first on ties. */
+export function getRelatedPosts(slug: string, limit = 3): Entry<Post>[] {
+  const all = getPosts();
+  const current = all.find((p) => p.slug === slug);
+  if (!current) return [];
+  const tags = new Set(current.data.tags);
+  return all
+    .filter((p) => p.slug !== slug)
+    .map((p) => ({ p, score: p.data.tags.filter((t) => tags.has(t)).length }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score || b.p.data.date.localeCompare(a.p.data.date))
+    .slice(0, limit)
+    .map(({ p }) => p);
 }
 
 export function getAllTags(): { tag: string; count: number }[] {

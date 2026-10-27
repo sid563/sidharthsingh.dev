@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" fill="none">
+  <rect width="1200" height="640" rx="24" fill="#111111"/>
+  <g stroke="#2a2a2a" stroke-width="1">
+    <path d="M0 80H1200M0 160H1200M0 240H1200M0 320H1200M0 400H1200M0 480H1200M0 560H1200"/>
+    <path d="M100 0V640M200 0V640M300 0V640M400 0V640M500 0V640M600 0V640M700 0V640M800 0V640M900 0V640M1000 0V640M1100 0V640"/>
+  </g>
+  <g stroke="#555" stroke-width="2" fill="#181818">
+    <rect x="140" y="250" width="220" height="110" rx="16"/>
+    <rect x="490" y="250" width="220" height="110" rx="16"/>
+    <rect x="840" y="250" width="220" height="110" rx="16"/>
+  </g>
+  <g stroke="#777" stroke-width="2" stroke-dasharray="6 8">
+    <path d="M360 305H490M710 305H840"/>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" fill="#a3a3a3" text-anchor="middle">
+    <text x="250" y="312">service</text>
+    <text x="600" y="312">queue</text>
+    <text x="950" y="312">database</text>
+  </g>
+  <text x="600" y="470" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" fill="#e38a3a" text-anchor="middle">architecture diagram goes here</text>
+  <text x="600" y="505" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" fill="#777" text-anchor="middle">replace /public/images/placeholder-architecture.svg or point the Figure at your own image</text>
+</svg>

@@ -10,6 +10,7 @@ import { Container } from "@/components/container";
 import { MetricsGrid } from "@/components/metrics-grid";
 import { PrevNext } from "@/components/prev-next";
 import { StatusBadge } from "@/components/status-badge";
+import { SystemSketch } from "@/components/sketch/system-sketch";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -92,6 +93,17 @@ export default async function ProjectPage({ params }: Props) {
               </div>
             ))}
           </dl>
+
+          {data.diagram ? (
+            <figure className="mt-8">
+              <div className="mdx-figure-frame mdx-diagram">
+                <SystemSketch spec={data.diagram} title={`${data.title}: system sketch`} size="full" packets={2} />
+              </div>
+              <figcaption className="mt-2 font-mono text-[11px] text-muted-foreground">
+                System sketch. Boxes are the real components; packets show the direction of flow.
+              </figcaption>
+            </figure>
+          ) : null}
 
           <MetricsGrid metrics={data.metrics} className="mt-8" />
 

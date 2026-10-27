@@ -37,7 +37,11 @@ export function SiteHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md supports-backdrop-filter:bg-background/60">
+    <header
+      data-vt-name
+      style={{ viewTransitionName: "site-header" }}
+      className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md supports-backdrop-filter:bg-background/60"
+    >
       <Container className="flex h-14 items-center justify-between gap-4">
         <Link
           href="/"

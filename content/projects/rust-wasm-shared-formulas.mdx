@@ -12,6 +12,16 @@ metrics:
   - { label: "Source of truth", value: "One Rust crate" }
   - { label: "Consumers", value: "Rust services + TypeScript services" }
   - { label: "Boundary", value: "Columnar Float64Array" }
+diagram:
+  nodes:
+    - { id: crate, label: "Rust crate", kind: file, note: "pricing formulas" }
+    - { id: rust, label: "Rust services", kind: service, note: "native call" }
+    - { id: wasm, label: "WebAssembly", kind: worker, note: "Float64Array boundary" }
+    - { id: ts, label: "TypeScript services", kind: service, note: "NestJS" }
+  edges:
+    - { from: crate, to: rust }
+    - { from: crate, to: wasm, label: "compile" }
+    - { from: wasm, to: ts }
 order: 20
 ---
 

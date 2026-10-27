@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/container";
 import { JourneyCard } from "@/components/journey-card";
 import { PageHeader } from "@/components/page-header";
+import { SpotlightGroup } from "@/components/spotlight";
 import { getProgress } from "@/lib/content";
 import { formatDate } from "@/lib/format";
 
@@ -43,11 +44,11 @@ export default function ProgressPage() {
             <StatTile label="Last updated" value={updated ? formatDate(updated) : "—"} />
           </dl>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <SpotlightGroup className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {journeys.map((journey) => (
               <JourneyCard key={journey.slug} slug={journey.slug} journey={journey.data} />
             ))}
-          </div>
+          </SpotlightGroup>
         </div>
       )}
     </Container>
