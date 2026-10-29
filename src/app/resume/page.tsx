@@ -17,7 +17,6 @@ import {
 } from "@/components/resume/resume-sections";
 import { resume } from "@/data/resume";
 import { site } from "@/data/site";
-import { documents } from "@/data/links";
 import { getProject } from "@/lib/content";
 import "./print.css";
 
@@ -38,28 +37,17 @@ export default function ResumePage() {
   return (
     <Container className="pb-8">
       <PageHeader eyebrow="Resume" title={resume.name} description={resume.headline} className="pb-6">
-        <PrintButton />
         {hasGeneratedPdf ? (
           <a
             href={generatedPdf}
             download="Sidharth-Singh-Resume.pdf"
-            className={buttonVariants({ variant: "outline", className: "print:hidden" })}
+            className={buttonVariants({ className: "print:hidden" })}
           >
+            <DownloadIcon data-icon="inline-start" />
             Download PDF
-            <DownloadIcon />
           </a>
         ) : null}
-        {documents.resume.url ? (
-          <a
-            href={documents.resume.path}
-            target="_blank"
-            rel="noreferrer"
-            className={buttonVariants({ variant: "outline", className: "print:hidden" })}
-          >
-            Original PDF
-            <ExternalLinkIcon />
-          </a>
-        ) : null}
+        <PrintButton />
         <a
           href={site.linkedin}
           target="_blank"

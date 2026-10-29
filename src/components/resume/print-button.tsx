@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 
 export function PrintButton() {
   return (
-    <Button className="print:hidden" onClick={() => window.print()}>
+    <Button variant="outline" className="print:hidden" onClick={() => window.print()}>
       <PrinterIcon />
-      Print / Save as PDF
+      Print
     </Button>
   );
 }
