@@ -917,6 +917,14 @@
   z-index: 1;
   max-height: 15rem;
 }
+@media (width < 40rem) {
+  .hero-sketch-frame {
+    padding: 1rem 0.75rem;
+  }
+  .hero-sketch-frame .sketch {
+    max-height: none;
+  }
+}
 .sketch-thumb {
   height: 7rem;
   display: grid;
@@ -1014,4 +1022,60 @@
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* ---------------------------------------------------------------------------
+   GitHub activity calendar (src/components/activity-grid.tsx).
+   --------------------------------------------------------------------------- */
+.activity {
+  --cell: 11px;
+  --gap: 3px;
+}
+.activity-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.activity-months,
+.activity-grid {
+  display: flex;
+  gap: var(--gap);
+  width: max-content;
+}
+.activity-month {
+  width: var(--cell);
+  height: 1rem;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1rem;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.activity-week {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+.activity-day {
+  display: block;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 2px;
+  background: color-mix(in oklch, var(--muted) 90%, var(--border));
+}
+.activity-day-empty {
+  background: transparent;
+}
+.activity-day[data-level="1"] { background: color-mix(in oklch, var(--brand) 32%, var(--muted)); }
+.activity-day[data-level="2"] { background: color-mix(in oklch, var(--brand) 58%, var(--muted)); }
+.activity-day[data-level="3"] { background: color-mix(in oklch, var(--brand) 82%, var(--muted)); }
+.activity-day[data-level="4"] { background: var(--brand); }
+figcaption .activity-day {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+}
+@media (width < 40rem) {
+  .activity-old {
+    display: none;
+  }
 }

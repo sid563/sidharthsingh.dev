@@ -4,6 +4,9 @@ import { JourneyCard } from "@/components/journey-card";
 import { PageHeader } from "@/components/page-header";
 import { SpotlightGroup } from "@/components/spotlight";
 import { getProgress } from "@/lib/content";
+import { getContributions } from "@/lib/github";
+import { ActivityGrid } from "@/components/activity-grid";
+import { site } from "@/data/site";
 import { formatDate } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -12,8 +15,9 @@ export const metadata: Metadata = {
     "Learning in public: each journey has a target, milestones and a dated log, with honest percentages.",
 };
 
-export default function ProgressPage() {
+export default async function ProgressPage() {
   const journeys = getProgress();
+  const contributions = await getContributions(site.githubUser);
 
   const active = journeys.filter((j) => j.data.status === "in-progress").length;
   const milestonesDone = journeys.reduce(
@@ -49,6 +53,21 @@ export default function ProgressPage() {
               <JourneyCard key={journey.slug} slug={journey.slug} journey={journey.data} />
             ))}
           </SpotlightGroup>
+
+          {contributions ? (
+            <section aria-labelledby="activity-heading" className="mt-16">
+              <p className="mb-2 font-mono text-xs tracking-wider text-brand uppercase">GitHub</p>
+              <h2 id="activity-heading" className="text-2xl font-semibold tracking-tight">
+                Commits in public
+              </h2>
+              <p className="mt-2 max-w-xl text-muted-foreground">
+                The same calendar as the GitHub profile, refreshed with every deploy.
+              </p>
+              <div className="mt-6">
+                <ActivityGrid data={contributions} user={site.githubUser} />
+              </div>
+            </section>
+          ) : null}
         </div>
       )}
     </Container>

@@ -181,6 +181,34 @@ await test("code blocks get a copy button that reports Copied", async () => {
   await page.waitForSelector(".code-block-copy[data-copied]", { timeout: 3000 });
 });
 
+await test("every project, post and journey has its own OG image, and pages point at it", async () => {
+  for (const route of ["/projects/tokio-job-scheduler", "/writing/learning-postgres-from-the-inside", "/progress/kafka-mastery"]) {
+    await page.goto(`${base}${route}`, { waitUntil: "networkidle" });
+    const og = await page.locator("meta[property='og:image']").first().getAttribute("content");
+    if (!og || !og.includes(`${route}/opengraph-image`)) throw new Error(`${route}: og:image is ${og}`);
+    // og:image is absolute on the production host; fetch the same path from the server under test.
+    const local = new URL(og);
+    const res = await page.request.get(`${base}${local.pathname}${local.search}`);
+    const type = res.headers()["content-type"] ?? "";
+    if (!res.ok() || !type.startsWith("image/png")) throw new Error(`${og}: ${res.status()} ${type}`);
+  }
+});
+
+await test("resume offers the generated PDF for download", async () => {
+  await page.goto(`${base}/resume`, { waitUntil: "networkidle" });
+  const href = await page.locator("a[download]").first().getAttribute("href");
+  if (!href) throw new Error("no download link");
+  const res = await page.request.get(`${base}${href}`);
+  const type = res.headers()["content-type"] ?? "";
+  if (!res.ok() || !type.includes("pdf")) throw new Error(`${href}: ${res.status()} ${type}`);
+});
+
+await test("progress page shows the GitHub activity calendar", async () => {
+  await page.goto(`${base}/progress`, { waitUntil: "networkidle" });
+  const cells = await page.locator(".activity-grid .activity-day").count();
+  if (cells < 300) throw new Error(`only ${cells} day cells`);
+});
+
 await test("404 suggests the closest real route", async () => {
   await page.goto(`${base}/projects/tokio-job-schedule`, { waitUntil: "networkidle" });
   await page.locator(".not-found-log a[href='/projects/tokio-job-scheduler']").waitFor({ state: "visible", timeout: 3000 });

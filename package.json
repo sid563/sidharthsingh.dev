@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "check:visual": "node scripts/visual-check.mjs",
-    "check:interact": "node scripts/interact.mjs"
+    "check:interact": "node scripts/interact.mjs",
+    "resume:pdf": "node scripts/resume-pdf.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

@@ -1,4 +1,11 @@
-import { layoutSketch, sketchHash, type SketchNodeKind, type SketchSize, type SketchSpec } from "@/lib/diagram";
+import {
+  layoutSketch,
+  sketchHash,
+  type SketchDirection,
+  type SketchNodeKind,
+  type SketchSize,
+  type SketchSpec,
+} from "@/lib/diagram";
 import { cn } from "@/lib/utils";
 
 /**
@@ -19,6 +26,8 @@ type SystemSketchProps = {
   className?: string;
   /** Seconds for one packet to cross a typical edge. */
   speed?: number;
+  /** "down" stacks the columns as rows; use it for narrow screens. */
+  direction?: SketchDirection;
 };
 
 export function SystemSketch({
@@ -28,11 +37,12 @@ export function SystemSketch({
   packets = 2,
   className,
   speed = 2.8,
+  direction = "right",
 }: SystemSketchProps) {
   // Card thumbnails drop notes and edge labels: at thumbnail scale they are noise.
   const compact = size === "card";
-  const layout = layoutSketch(spec, size, { compact });
-  const uid = `sk-${sketchHash(title + size)}`;
+  const layout = layoutSketch(spec, size, { compact, direction });
+  const uid = `sk-${sketchHash(title + size + direction)}`;
   const { geometry: g } = layout;
   const font = g.labelFont;
   const noteFont = g.noteFont;

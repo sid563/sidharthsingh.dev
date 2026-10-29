@@ -26,6 +26,7 @@ export const site = {
   // Set NEXT_PUBLIC_SITE_URL once a domain is bought. Used for metadata and OG images.
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://sidharthsingh.dev",
   github: "https://github.com/sid563",
+  githubUser: "sid563",
   /** Public source of this site; article pages link to their own file. */
   repo: "https://github.com/sid563/sidharthsingh.dev",
   linkedin: "https://www.linkedin.com/in/sidharthsingh-ss563",

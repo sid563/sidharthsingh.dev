@@ -2,7 +2,7 @@
 @media print {
   @page {
     size: A4;
-    margin: 14mm 16mm;
+    margin: 11mm 13mm;
   }
 
   /* Site header and footer live outside <main>; page-level <header>s stay. */
@@ -15,7 +15,8 @@
   body {
     background: #fff !important;
     color: #000 !important;
-    font-size: 10.5pt;
+    font-size: 8.75pt;
+    line-height: 1.33;
   }
 
   main {
@@ -39,19 +40,82 @@
     color: #333 !important;
   }
 
+  /* Page header: no top padding, smaller name, no button row. */
+  main header {
+    padding-top: 0 !important;
+    padding-bottom: 6pt !important;
+  }
+  main header h1 {
+    font-size: 20pt !important;
+  }
+  main header p {
+    font-size: 10.5pt !important;
+    margin-top: 2pt !important;
+  }
+  main header > div:last-child:not(:first-child) {
+    display: none !important;
+  }
+
+  /* Contact line sits tight under the header. */
+  main > div.mb-8 {
+    margin-bottom: 6pt !important;
+  }
+
+  /* Sections: label above content, full width, compact rhythm. */
   .resume-section {
+    display: block !important;
     border-color: #ddd !important;
+    padding: 4pt 0 !important;
   }
-
-  .resume-entry {
-    break-inside: avoid;
-  }
-
-  .resume-entry li {
-    break-inside: avoid;
-  }
-
   .resume-section > h2 {
+    margin-bottom: 4pt;
+    padding-top: 0 !important;
     break-after: avoid;
+  }
+  .resume-section > div > :not(:last-child) {
+    margin-block-end: 5pt !important;
+    margin-block-start: 0 !important;
+  }
+
+  /* Entries may break across pages; headings stay with their first lines. */
+  .resume-entry {
+    display: grid !important;
+    grid-template-columns: 6.5rem 1fr !important;
+    gap: 0 10pt !important;
+    break-inside: auto;
+  }
+  .resume-entry h3 {
+    break-after: avoid;
+  }
+  .resume-entry li {
+    break-inside: auto;
+    margin: 0 !important;
+  }
+
+  /* The "Resume" eyebrow is site chrome; the document speaks for itself. */
+  main header > p:first-child {
+    display: none !important;
+  }
+
+  /* Tech chips become one dotted line instead of a wrapping row of pills. */
+  .resume-entry ul.flex-wrap,
+  .resume-section ul.flex-wrap {
+    gap: 0 !important;
+  }
+  .resume-entry ul.flex-wrap > li,
+  .resume-section ul.flex-wrap > li {
+    border: 0 !important;
+    padding: 0 !important;
+    font-size: 8pt !important;
+    line-height: 1.3 !important;
+  }
+  .resume-entry ul.flex-wrap > li:not(:last-child)::after,
+  .resume-section ul.flex-wrap > li:not(:last-child)::after {
+    content: " · ";
+    white-space: pre;
+    color: #999;
+  }
+  .resume-entry > div > .mt-2 {
+    margin-top: 3pt !important;
   }
 }

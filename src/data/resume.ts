@@ -162,6 +162,8 @@ export const resume = {
       "FastAPI",
       "Spring Boot",
       "REST APIs",
+      "gRPC",
+      "WebSockets",
       "Hexagonal architecture",
       "Microservices",
     ],

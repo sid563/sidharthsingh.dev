@@ -15,6 +15,10 @@ Personal portfolio for Sidharth Singh (backend engineer: Rust, TypeScript, Pytho
 - **Theme toggle** uses the View Transitions API via `useThemeTransition()` (circular reveal from the button); the command palette shares it. **Route transitions** come from React 19.3 `<ViewTransition>` in `src/app/template.tsx` (classes `page-enter`/`page-exit` in globals.css). The header carries `view-transition-name: site-header` so it never animates.
 - **Keyboard shortcuts** (`src/lib/shortcuts.ts`, `src/components/keyboard-shortcuts.tsx`): `g` + letter to navigate, `t` theme, `/` search, `?` opens the list. The palette shows the hints. Never fire while typing.
 - Footer shows Delhi local time (client) and a Source link to the public repo. No commit hash on the site, by the owner's choice.
+- **OG images**: `src/app/opengraph-image.tsx` is the site card; projects, posts and journeys each have an `opengraph-image.tsx` next to their page built from `src/lib/og.tsx` (`OgFrame`, `OgSketch`). Satori rules apply: every div with several children needs `display: flex`, no CSS classes, SVG limited to shapes.
+- **Mobile hero**: the hero band renders twice, a `direction="down"` card-size sketch under `sm` and the horizontal `hero` size above; `layoutSketch` supports both directions.
+- **Resume PDF**: `pnpm start -p 3111` then `pnpm resume:pdf` prints `/resume` to `public/resume/sidharth-singh-resume.pdf` (committed). Re-run after editing `src/data/resume.ts`; the Download button only renders when the file exists.
+- **GitHub activity** (`src/lib/github.ts`, `src/components/activity-grid.tsx`): fetched at build time, GraphQL when `GITHUB_TOKEN` is set, otherwise the public calendar API; a failure hides the section. `vercel.json` schedules `/api/cron/rebuild` daily, which is inert until `CRON_SECRET` and `DEPLOY_HOOK_URL` exist on Vercel.
 - `site.principles` (home "Working principles") are lines quoted from the project write-ups; edit them in `src/data/site.ts`.
 
 ## Content model (file-based, no database)
@@ -45,7 +49,7 @@ Live at https://sidharthsingh.dev since 27 Oct 2026. Vercel project `sidharthsin
 - Drive links for resume, certificates and degree in `src/data/links.ts`.
 - Chatbot behind the floating button (`src/components/chat-widget.tsx`), planned for Nov 2026.
 - Real stats for RapidShyp and the Tokio scheduler, once provided.
-- Per-page OG images, GitHub activity on /progress, resume PDF export.
+- Per-page OG images, GitHub activity and the resume PDF shipped 29 Oct 2026. Still open: set `CRON_SECRET` and `DEPLOY_HOOK_URL` on Vercel for the daily rebuild.
 - Commit and push the `scripts/interact.mjs` change (project filter counts now derived from `content/projects`).
 - Canonical URL: set `alternates.canonical` in the root metadata so `sidharthsingh-dev.vercel.app` doesn't compete with the domain.
 - Google Search Console: add sidharthsingh.dev as a Domain property (TXT record at Cloudflare), submit `/sitemap.xml`.

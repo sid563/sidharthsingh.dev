@@ -65,9 +65,13 @@ export const geometries: Record<SketchSize, Geometry> = {
 /** Monospace glyphs are ~0.6em wide; Geist Mono is a touch wider. */
 const CHAR = 0.62;
 
+export type SketchDirection = "right" | "down";
+
 export type LayoutOptions = {
   /** Thumbnails hide notes and edge labels, so boxes size to labels only. */
   compact?: boolean;
+  /** "right" lays columns left to right (default); "down" stacks them as rows, for narrow screens. */
+  direction?: SketchDirection;
 };
 
 function nodeWidth(node: SketchNode, g: Geometry, compact: boolean): number {
@@ -171,6 +175,10 @@ export function layoutSketch(
     columnX[c] = c === 0 ? g.pad : columnX[c - 1] + columnW[c - 1] + g.colGap;
   }
 
+  if ((options.direction ?? "right") === "down") {
+    return layoutDown(spec, g, byColumn, columnCount, widths, backEdges);
+  }
+
   const placed = new Map<string, LaidOutNode>();
   for (let c = 0; c < columnCount; c++) {
     const nodes = byColumn.get(c) ?? [];
@@ -232,6 +240,84 @@ export function layoutSketch(
   const width = columnX[columnCount - 1] + columnW[columnCount - 1] + g.pad;
   const height = g.pad * 2 + innerH + (hasBack ? Math.ceil(g.loopDrop * 0.75 + g.noteFont + 14) : 0);
 
+  return { width, height, nodes: [...placed.values()], edges, geometry: g };
+}
+
+/**
+ * Top-to-bottom variant: each column becomes a row of boxes, edges run from
+ * the bottom of a box to the top of the next, and back edges loop on the
+ * right. Used on narrow screens where a wide diagram would not fit.
+ */
+function layoutDown(
+  spec: SketchSpec,
+  g: Geometry,
+  byColumn: Map<number, SketchNode[]>,
+  columnCount: number,
+  widths: Map<string, number>,
+  backEdges: Set<number>,
+): SketchLayout {
+  const gapX = 14;
+  const gapY = Math.round(g.colGap * 0.6);
+  const rowW: number[] = [];
+  for (let r = 0; r < columnCount; r++) {
+    const nodes = byColumn.get(r) ?? [];
+    rowW[r] = nodes.reduce((sum, n) => sum + (widths.get(n.id) ?? g.nodeW), 0) + (nodes.length - 1) * gapX;
+  }
+  const innerW = Math.max(...rowW);
+
+  const placed = new Map<string, LaidOutNode>();
+  for (let r = 0; r < columnCount; r++) {
+    const nodes = byColumn.get(r) ?? [];
+    let x = g.pad + (innerW - rowW[r]) / 2;
+    for (const node of nodes) {
+      const w = widths.get(node.id) ?? g.nodeW;
+      placed.set(node.id, { ...node, column: r, w, h: g.nodeH, x, y: g.pad + r * (g.nodeH + gapY) });
+      x += w + gapX;
+    }
+  }
+
+  let loopRight = 0;
+  const edges: LaidOutEdge[] = [];
+  spec.edges.forEach((edge, i) => {
+    const a = placed.get(edge.from);
+    const b = placed.get(edge.to);
+    if (!a || !b || a === b) return;
+    const back = backEdges.has(i) || b.column <= a.column;
+    if (back) {
+      const x1 = a.x + a.w;
+      const y1 = a.y + a.h / 2;
+      const x2 = b.x + b.w;
+      const y2 = b.y + b.h / 2;
+      const reach = Math.max(x1, x2) + g.loopDrop;
+      loopRight = Math.max(loopRight, reach);
+      const d = `M ${x1} ${y1} C ${reach} ${y1}, ${reach} ${y2}, ${x2} ${y2}`;
+      const rightmost = 0.75 * reach + 0.125 * (x1 + x2);
+      edges.push({
+        ...edge,
+        d,
+        back,
+        mid: { x: rightmost + 4, y: (y1 + y2) / 2 + g.noteFont / 2 },
+        length: Math.abs(y1 - y2) + g.loopDrop * 1.6,
+      });
+      return;
+    }
+    const x1 = a.x + a.w / 2;
+    const y1 = a.y + a.h;
+    const x2 = b.x + b.w / 2;
+    const y2 = b.y;
+    const bend = Math.max(12, (y2 - y1) / 2);
+    const d = `M ${x1} ${y1} C ${x1} ${y1 + bend}, ${x2} ${y2 - bend}, ${x2} ${y2}`;
+    edges.push({
+      ...edge,
+      d,
+      back,
+      mid: { x: (x1 + x2) / 2 + 6, y: (y1 + y2) / 2 + g.noteFont / 2 },
+      length: Math.hypot(x2 - x1, y2 - y1) * 1.05,
+    });
+  });
+
+  const width = Math.max(g.pad * 2 + innerW, loopRight ? loopRight + g.noteFont * 4 : 0);
+  const height = g.pad * 2 + columnCount * g.nodeH + (columnCount - 1) * gapY;
   return { width, height, nodes: [...placed.values()], edges, geometry: g };
 }
 

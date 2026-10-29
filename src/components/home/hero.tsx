@@ -84,8 +84,8 @@ export function Hero() {
           </div>
         </FadeIn>
 
-        <FadeIn mode="load" delay={0.7} y={16} className="hidden sm:block">
-          <HeroSketch className="mt-14" />
+        <FadeIn mode="load" delay={0.7} y={16}>
+          <HeroSketch className="mt-12 sm:mt-14" />
         </FadeIn>
 
         <FadeIn mode="load" delay={0.8} y={16}>

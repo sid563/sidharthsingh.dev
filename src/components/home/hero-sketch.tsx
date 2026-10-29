@@ -30,11 +30,26 @@ const spec: SketchSpec = {
   ],
 };
 
+export { spec as heroSpec };
+
 export function HeroSketch({ className }: { className?: string }) {
   return (
     <figure className={cn("hero-sketch", className)}>
       <div className="hero-sketch-frame">
-        <SystemSketch spec={spec} title="The shape of the systems I build" size="hero" packets={2} speed={3.2} />
+        {/* Phones get the same system stacked top to bottom; wider screens get the band. */}
+        <div className="sm:hidden">
+          <SystemSketch
+            spec={spec}
+            title="The shape of the systems I build"
+            size="card"
+            direction="down"
+            packets={1}
+            speed={3.2}
+          />
+        </div>
+        <div className="hidden sm:block">
+          <SystemSketch spec={spec} title="The shape of the systems I build" size="hero" packets={2} speed={3.2} />
+        </div>
       </div>
       <figcaption className="mt-3 font-mono text-[11px] text-muted-foreground">
         The shape of the work: orders and mail in, events through Kafka, workers bounded by permits, two

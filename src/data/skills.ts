@@ -54,6 +54,8 @@ export const skillGroups: SkillGroup[] = [
       { name: "Event-driven design", depth: "expert" },
       { name: "FastAPI", depth: "production" },
       { name: "Concurrency & async runtimes", depth: "production", note: "Tokio, semaphore-bounded worker pools" },
+      { name: "gRPC", depth: "production", note: "service-to-service APIs with protobuf contracts" },
+      { name: "WebSockets", depth: "production", note: "real-time updates to clients" },
       { name: "Spring Boot", depth: "working" },
     ],
   },
