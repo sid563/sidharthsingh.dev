@@ -150,10 +150,15 @@ await test("chat widget streams an answer from the chat API (mocked)", async () 
     await input.press("Enter");
     await dialog.locator("strong", { hasText: "1buy.ai" }).waitFor({ timeout: 5000 });
     await dialog.getByText("from experience").waitFor({ timeout: 3000 });
-    await dialog.getByRole("button", { name: "Clear" }).click();
-    await dialog.getByText("Ask about my work, projects").waitFor({ timeout: 3000 });
+    // the conversation survives navigation within the tab
+    await page.goto(`${base}/about`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Ask about me" }).click();
+    const again = page.getByRole("dialog", { name: /Ask about/ });
+    await again.locator("strong", { hasText: "1buy.ai" }).waitFor({ timeout: 3000 });
+    await again.getByRole("button", { name: "Clear" }).click();
+    await again.getByText("Ask about my work, projects").waitFor({ timeout: 3000 });
     await page.keyboard.press("Escape");
-    await dialog.waitFor({ state: "hidden", timeout: 3000 });
+    await again.waitFor({ state: "hidden", timeout: 3000 });
   } finally {
     await page.unroute("**/api/chat/stream", handler);
   }

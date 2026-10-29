@@ -56,10 +56,12 @@ export function ChatWidget() {
     }
   };
 
+  // Save after every change. Only `clear` removes the entry: a fresh page load
+  // starts with an empty list and must not wipe the conversation it is about to restore.
   React.useEffect(() => {
+    if (!messages.length) return;
     try {
-      if (messages.length) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-      else sessionStorage.removeItem(STORAGE_KEY);
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     } catch {
       // ignore
     }
@@ -141,6 +143,11 @@ export function ChatWidget() {
     abortRef.current?.abort();
     setMessages([]);
     setBusy(false);
+    try {
+      sessionStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     inputRef.current?.focus();
   };
 
