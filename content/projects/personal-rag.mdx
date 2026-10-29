@@ -1,45 +1,71 @@
 ---
-title: "Personal RAG assistant on AWS"
-summary: "A retrieval-augmented chat service built to learn the full build-and-deploy loop: NestJS, MongoDB Atlas vector search, Hugging Face embeddings, Groq-hosted Llama, Docker, and a hand-provisioned EC2 box."
-date: "2026-05-03"
+title: "Personal RAG assistant: the chat in the corner of this site"
+summary: "The NestJS service behind this site's chat button: a curated knowledge base embedded on Cloudflare Workers AI, MongoDB Atlas Vector Search with a similarity threshold, answers from gpt-oss-120b on Groq with Llama on Cloudflare as the fallback, Turnstile browser checks and shared rate limits in front, streaming answers out, on Vercel."
+date: "2026-10-29"
 status: shipped
 featured: false
 kind: personal
 role: "Everything"
-stack: [NestJS, TypeScript, MongoDB Atlas, Hugging Face, Groq, Docker, AWS EC2]
-metrics:
-  - { label: "Retrieval", value: "Atlas Vector Search" }
-  - { label: "LLM", value: "Llama via Groq" }
-  - { label: "Deploy", value: "Docker on EC2, ap-south-1" }
+stack: [NestJS, TypeScript, MongoDB Atlas, Cloudflare Workers AI, Groq, Turnstile, Vercel]
 links:
-  - { label: "GitHub", href: "https://github.com/sid563" }
+  - { label: "GitHub", href: "https://github.com/sid563/personal-rag" }
+metrics:
+  - { label: "Knowledge", value: "101 chunks, 384 dims" }
+  - { label: "Retrieval", value: "top 6, threshold 0.78" }
+  - { label: "Answer", value: "gpt-oss-120b, streamed" }
+  - { label: "Front door", value: "Turnstile + rate limits" }
 diagram:
   nodes:
-    - { id: docs, label: "Documents", kind: file, note: "chunked" }
-    - { id: user, label: "Question", kind: client }
-    - { id: nest, label: "NestJS service", kind: service, note: "Docker on EC2" }
-    - { id: hf, label: "Hugging Face", kind: model, note: "embeddings" }
-    - { id: atlas, label: "Atlas vector search", kind: db, note: "MongoDB" }
-    - { id: groq, label: "Llama via Groq", kind: model, note: "answers" }
+    - { id: visitor, label: "Visitor", kind: client, note: "chat widget" }
+    - { id: ts, label: "Turnstile", kind: external, note: "browser check" }
+    - { id: api, label: "NestJS API", kind: service, note: "Vercel · sessions · limits" }
+    - { id: cf, label: "Workers AI", kind: model, note: "bge-small embeddings" }
+    - { id: atlas, label: "Atlas", kind: db, note: "vector search" }
+    - { id: llm, label: "Groq", kind: model, note: "gpt-oss-120b" }
   edges:
-    - { from: docs, to: nest, label: "ingest" }
-    - { from: user, to: nest }
-    - { from: nest, to: hf }
-    - { from: nest, to: atlas }
-    - { from: nest, to: groq }
+    - { from: visitor, to: ts, label: "verify" }
+    - { from: ts, to: api, label: "token" }
+    - { from: visitor, to: api, label: "ask" }
+    - { from: api, to: cf, label: "embed" }
+    - { from: api, to: atlas, label: "top 6" }
+    - { from: api, to: llm, label: "answer" }
 order: 50
 ---
 
 ## Why
 
-I wanted to own every step from `git init` to a public URL, including the parts a platform usually hides: security groups, SSH, running a container on a server, and what breaks when the instance restarts.
+A portfolio answers the questions its author thought of. The chat button in the corner answers the ones a visitor actually has, from the same facts, and says so when it does not know. The service began in May 2026 as a way to own every step from `git init` to a public URL, Docker on a hand-provisioned EC2 box included. In October it became the assistant behind this site, which meant making it safe to expose and cheap to run.
 
-## What it does
+## How a question is answered
 
-- Ingests documents, chunks them, embeds them with a Hugging Face model and stores vectors in MongoDB Atlas.
-- Answers questions over that corpus with a Llama model served by Groq.
-- Runs as a single Docker container on an EC2 instance.
+1. The widget verifies the browser once with Cloudflare Turnstile, silently in the normal case, and exchanges the token for a signed thirty-minute session. Scripts without a browser never get past this step.
+2. The question is embedded with bge-small-en-v1.5 on Cloudflare Workers AI, 384 dimensions.
+3. MongoDB Atlas Vector Search returns the six closest chunks. Anything below a cosine threshold of 0.78 is dropped, measured against real questions: on-topic hits score 0.86 and above, unrelated ones 0.78 and below. When nothing survives, the service answers "I don't have that" and points at my email without spending a model call.
+4. The surviving chunks become a system prompt that allows answers only from them. gpt-oss-120b on Groq writes the answer with low reasoning effort and streams it back over server-sent events. If Groq is out of quota or down, Llama 3.3 70B on Workers AI takes the same prompt.
 
-## Loose ends I know about
+## The knowledge base
 
-No Elastic IP yet, no domain or TLS, and the deploy is a manual pull. Fixing those is part of the [cloud and DevOps roadmap](/roadmap).
+Not the site's pages chunked blindly: about a hundred hand-written chunks, one per heading in a handful of markdown files, each short enough to stand alone and name its subject. A seed script embeds them in batches, writes the new set, removes the old one, and waits until Atlas reports the index has caught up, because the first queries after a reseed used to come back empty. Chunks whose body starts with a `TODO` are skipped, so unanswered questions can sit in the file without leaking into answers.
+
+## Safe to expose
+
+- A Turnstile session or nothing: the access check runs before the rate limiter, so rejected calls cost nothing.
+- Fixed-window rate limits per visitor per minute and per day, plus a daily budget for everyone, counted in a MongoDB TTL collection so every serverless instance shares them. 429 responses carry `Retry-After`.
+- CORS allow-list for the site's origin, size caps on the message and the history, and knowledge-management endpoints that need an admin token.
+- Every provider failure is logged before the next provider is tried, so a fallback is visible in Vercel's logs rather than silent.
+
+## By the numbers
+
+| | |
+| --- | --- |
+| Knowledge | 101 chunks, 60 to 180 words each, 7 categories |
+| Embeddings | bge-small-en-v1.5, 384 dimensions, cosine |
+| Retrieval | top 6, threshold 0.78 |
+| Session | Turnstile token exchanged for a 30-minute HMAC session |
+| Limits | 8 a minute and 60 a day per visitor, 600 a day in total |
+| Answer | gpt-oss-120b on Groq, Llama 3.3 70B on Cloudflare as fallback |
+| Deploy | one NestJS function on Vercel, zero configuration |
+
+<Callout type="tip" title="The one-line version">
+Verify the browser, embed the question, keep only chunks that clear the bar, answer from those alone, stream it back.
+</Callout>
