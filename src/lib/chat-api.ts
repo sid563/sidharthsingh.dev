@@ -7,6 +7,9 @@ export const chatApiUrl = (process.env.NEXT_PUBLIC_CHAT_API_URL ?? "https://chat
   "",
 );
 
+/** Shared key the API checks as x-chat-key. It is public in this bundle: a deterrent, not a secret. */
+const chatApiKey = process.env.NEXT_PUBLIC_CHAT_API_KEY ?? "";
+
 export type ChatTurn = { role: "user" | "assistant"; content: string };
 
 export class ChatError extends Error {
@@ -42,7 +45,7 @@ export async function streamAnswer(opts: {
   try {
     res = await fetch(`${chatApiUrl}/api/chat/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(chatApiKey ? { "x-chat-key": chatApiKey } : {}) },
       body: JSON.stringify({ message: opts.message, history: opts.history }),
       signal: opts.signal,
     });

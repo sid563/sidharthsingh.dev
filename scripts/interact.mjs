@@ -128,7 +128,7 @@ await test("chat widget streams an answer from the chat API (mocked)", async () 
     const cors = {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "POST, OPTIONS",
-      "access-control-allow-headers": "content-type",
+      "access-control-allow-headers": "content-type, x-chat-key",
     };
     if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     const body = [
