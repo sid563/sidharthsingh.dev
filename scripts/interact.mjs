@@ -122,6 +122,43 @@ await test("contact page copy-email button reports Copied", async () => {
   await page.getByText(/copied/i).first().waitFor({ timeout: 3000 });
 });
 
+await test("chat widget streams an answer from the chat API (mocked)", async () => {
+  await page.goto(`${base}/`, { waitUntil: "networkidle" });
+  const handler = async (route) => {
+    const cors = {
+      "access-control-allow-origin": "*",
+      "access-control-allow-methods": "POST, OPTIONS",
+      "access-control-allow-headers": "content-type",
+    };
+    if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
+    const body = [
+      'data: {"type":"sources","sources":["experience"]}',
+      'data: {"type":"token","text":"Sidharth works at **1buy.ai** in Delhi, on the "}',
+      'data: {"type":"token","text":"order-fulfilment backend."}',
+      'data: {"type":"done","provider":"mock"}',
+      "",
+    ].join("\n\n");
+    return route.fulfill({ status: 200, headers: { ...cors, "content-type": "text/event-stream" }, body });
+  };
+  await page.route("**/api/chat/stream", handler);
+  try {
+    await page.getByRole("button", { name: "Ask about me" }).click();
+    const dialog = page.getByRole("dialog", { name: /Ask about/ });
+    await dialog.waitFor({ timeout: 3000 });
+    const input = dialog.getByLabel("Your question");
+    await input.fill("Where does Sidharth work?");
+    await input.press("Enter");
+    await dialog.locator("strong", { hasText: "1buy.ai" }).waitFor({ timeout: 5000 });
+    await dialog.getByText("from experience").waitFor({ timeout: 3000 });
+    await dialog.getByRole("button", { name: "Clear" }).click();
+    await dialog.getByText("Ask about my work, projects").waitFor({ timeout: 3000 });
+    await page.keyboard.press("Escape");
+    await dialog.waitFor({ state: "hidden", timeout: 3000 });
+  } finally {
+    await page.unroute("**/api/chat/stream", handler);
+  }
+});
+
 await test("OG image is a PNG and sitemap lists content routes", async () => {
   const og = await page.request.get(`${base}/opengraph-image`);
   if (!og.headers()["content-type"]?.startsWith("image/png")) throw new Error(`og content-type ${og.headers()["content-type"]}`);

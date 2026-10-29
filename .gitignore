@@ -42,3 +42,6 @@ next-env.d.ts
 
 # visual check output
 /.checks
+
+# keep the example env in the repo
+!.env.example

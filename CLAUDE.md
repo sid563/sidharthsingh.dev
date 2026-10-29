@@ -20,6 +20,7 @@ Personal portfolio for Sidharth Singh (backend engineer: Rust, TypeScript, Pytho
 - **Resume PDF**: `pnpm start -p 3111` then `pnpm resume:pdf` prints `/resume` to `public/resume/sidharth-singh-resume.pdf` (committed). Re-run after editing `src/data/resume.ts`; the Download button only renders when the file exists.
 - **GitHub activity** (`src/lib/github.ts`, `src/components/activity-grid.tsx`): fetched at build time, GraphQL when `GITHUB_TOKEN` is set, else the public calendar API, else the committed snapshot `content/github-contributions.json` (refresh it with `pnpm github:sync`; Vercel's build could not reach the public API on 29 Oct 2026, so the snapshot is what keeps the section alive). `vercel.json` schedules `/api/cron/rebuild` daily, inert until `CRON_SECRET` and `DEPLOY_HOOK_URL` exist on Vercel.
 - `site.principles` (home "Working principles") are lines quoted from the project write-ups; edit them in `src/data/site.ts`.
+- **Chat widget** (`src/components/chat-widget.tsx`, client for the API in `src/lib/chat-api.ts`, renderer `src/components/chat-markdown.tsx`): streams answers from the personal-rag service (`~/Developer/personal/personal-rag`, NestJS, deployed separately) at `NEXT_PUBLIC_CHAT_API_URL` (default https://chat.sidharthsingh.dev; the var is inlined at build time). Conversation lives in sessionStorage. `check:interact` mocks `**/api/chat/stream` with Playwright, so the suite never needs the real API.
 
 ## Content model (file-based, no database)
 - `content/projects|writing|roadmap|progress/*.mdx` + `content/now.mdx`, validated by Zod in `src/lib/content.ts`. A bad field fails the build with the file name.
@@ -47,7 +48,7 @@ Vercel Hobby. Domain sidharthsingh.dev on Cloudflare Registrar (DNS records for 
 Live at https://sidharthsingh.dev since 27 Oct 2026. Vercel project `sidharthsingh-dev` (GitHub sid563/sidharthsingh.dev (public), auto-deploys main). www 308s to the apex; Cloudflare holds a DNS-only A record on `@` and a DNS-only CNAME on `www`. Full suite (`BASE=https://sidharthsingh.dev pnpm check:visual && pnpm check:interact`) passed on launch day.
 
 ## Pending
-- Chatbot behind the floating button (`src/components/chat-widget.tsx`), approved 29 Oct 2026, not started.
+- Chatbot: widget and API built 29 Oct 2026; still to do: seed with Cloudflare embeddings, tune `RAG_MIN_SCORE`, deploy personal-rag to Vercel at chat.sidharthsingh.dev (DNS-only CNAME on Cloudflare), then update `content/projects/personal-rag.mdx` (currently describes the EC2 deployment) and flip the roadmap entry to shipped.
 - The 20k-orders bulk-upload figure for RapidShyp came from Sidharth on 29 Oct 2026; the RapidShyp resume bullets added the same day contain inferred lines he still has to confirm (learned Rust on the job, promotion timing, "Hardened the Bulk Orders pipeline").
 - Optional: set `CRON_SECRET` and `DEPLOY_HOOK_URL` on Vercel for the daily rebuild of the GitHub calendar; add an email login to the Vercel account.
 - Replace the four sample draft posts with real writing; swap the placeholder figure for real architecture images.

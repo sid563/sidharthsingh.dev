@@ -1,11 +1,13 @@
 ---
 title: "A chatbot that knows this site"
-summary: "An assistant in the corner of every page that answers questions about my work, resume, roadmap and progress, grounded in the same content files that render the site."
-status: planned
+summary: "An assistant in the corner of every page that answers questions about my work, resume, roadmap and progress, grounded in a knowledge base built from the same content that renders the site."
+status: in-progress
 theme: "Meta"
 timeframe: "Nov 2026"
-updated: "2026-10-27"
+updated: "2026-10-29"
 order: 55
 ---
 
-The button is already in the corner. Next: retrieval over the content folder, an API route, and an honest "I don't know" when the files do not say.
+The button in the corner now opens a real chat. It runs on my [personal RAG service](/projects/personal-rag): a knowledge base of about a hundred chunks written from this site's pages, embedded with bge-small on Cloudflare Workers AI, retrieved from MongoDB Atlas Vector Search with a similarity threshold, and answered by gpt-oss-120b on Groq with Llama on Cloudflare as the fallback. Below the threshold it says it does not know and points at my email instead of guessing.
+
+Still to do: tune the threshold against real questions, fill in the FAQ chunks the site cannot answer on its own, and keep the knowledge base in step with the pages.
