@@ -186,11 +186,12 @@ await test("404 suggests the closest real route", async () => {
   await page.locator(".not-found-log a[href='/projects/tokio-job-scheduler']").waitFor({ state: "visible", timeout: 3000 });
 });
 
-await test("footer shows the deploy commit and the local time", async () => {
+await test("footer shows the local time and a Source link, but no commit hash", async () => {
   await page.goto(`${base}/`, { waitUntil: "networkidle" });
-  const commits = await page.locator("footer a[href*='/commit/']").count();
   await page.waitForFunction(() => /\d{2}:\d{2} IST/.test(document.querySelector("footer")?.textContent ?? ""), null, { timeout: 3000 });
-  if (commits !== 1) throw new Error(`${commits} commit links`);
+  const source = await page.locator("footer a", { hasText: "Source" }).count();
+  const commits = await page.locator("footer a[href*='/commit/']").count();
+  if (source !== 1 || commits !== 0) throw new Error(`source=${source} commit links=${commits}`);
 });
 
 await ctx.close();

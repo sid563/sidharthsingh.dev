@@ -14,7 +14,7 @@ Personal portfolio for Sidharth Singh (backend engineer: Rust, TypeScript, Pytho
 - **Spotlight cards**: wrap a grid in `<SpotlightGroup>` and give each card `data-spotlight` + `spotlight-card relative`. Pointer-only, CSS-driven; siblings dim while one card is hovered.
 - **Theme toggle** uses the View Transitions API via `useThemeTransition()` (circular reveal from the button); the command palette shares it. **Route transitions** come from React 19.3 `<ViewTransition>` in `src/app/template.tsx` (classes `page-enter`/`page-exit` in globals.css). The header carries `view-transition-name: site-header` so it never animates.
 - **Keyboard shortcuts** (`src/lib/shortcuts.ts`, `src/components/keyboard-shortcuts.tsx`): `g` + letter to navigate, `t` theme, `/` search, `?` opens the list. The palette shows the hints. Never fire while typing.
-- Footer shows Delhi local time (client) and the build commit: `VERCEL_GIT_COMMIT_SHA` on Vercel, `git rev-parse HEAD` locally.
+- Footer shows Delhi local time (client) and a Source link to the public repo. No commit hash on the site, by the owner's choice.
 - `site.principles` (home "Working principles") are lines quoted from the project write-ups; edit them in `src/data/site.ts`.
 
 ## Content model (file-based, no database)
@@ -39,7 +39,7 @@ Both scripts use the installed Google Chrome via playwright-core (`channel: "chr
 
 ## Deployment
 Vercel Hobby. Domain sidharthsingh.dev on Cloudflare Registrar (DNS records for Vercel must be DNS-only). Env: `NEXT_PUBLIC_SITE_URL=https://sidharthsingh.dev`.
-Live at https://sidharthsingh.dev since 27 Oct 2026. Vercel project `sidharthsingh-dev` (GitHub sid563/sidharthsingh.dev, auto-deploys main). www 308s to the apex; Cloudflare holds a DNS-only A record on `@` and a DNS-only CNAME on `www`. Full suite (`BASE=https://sidharthsingh.dev pnpm check:visual && pnpm check:interact`) passed on launch day.
+Live at https://sidharthsingh.dev since 27 Oct 2026. Vercel project `sidharthsingh-dev` (GitHub sid563/sidharthsingh.dev (public), auto-deploys main). www 308s to the apex; Cloudflare holds a DNS-only A record on `@` and a DNS-only CNAME on `www`. Full suite (`BASE=https://sidharthsingh.dev pnpm check:visual && pnpm check:interact`) passed on launch day.
 
 ## Pending
 - Drive links for resume, certificates and degree in `src/data/links.ts`.
