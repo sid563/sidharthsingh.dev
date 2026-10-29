@@ -5,7 +5,7 @@ const base = process.env.BASE ?? "http://localhost:3111";
 const out = new URL("../.checks/", import.meta.url).pathname;
 fs.mkdirSync(out, { recursive: true });
 const routes = [
-  "/", "/about", "/projects", "/projects/tokio-job-scheduler", "/writing",
+  "/", "/about", "/projects", "/projects/go-job-scheduler", "/writing",
   "/writing/learning-postgres-from-the-inside", "/roadmap", "/progress",
   "/progress/postgres-internals", "/now", "/contact", "/resume", "/nope",
 ];

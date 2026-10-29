@@ -25,14 +25,14 @@ export type SkillGroup = { name: string; blurb: string; skills: Skill[] };
 export const skillGroups: SkillGroup[] = [
   {
     name: "Languages",
-    blurb: "Rust and TypeScript for most of what I ship; Python when the data layer calls for it.",
+    blurb: "Rust and TypeScript for most of what I ship; Python and Go when the job calls for them.",
     skills: [
       {
         name: "Rust",
         depth: "expert",
         note: "Actix Web, Tokio, serde, rdkafka, wasm-bindgen",
         points: [
-          "Async services on Tokio and Actix Web: Arc<Semaphore>-bounded worker pools, backpressure through bounded channels, atomic job claims and cancellation-safe tasks.",
+          "Async services on Tokio and Actix Web: backpressure-aware worker pools, serde-typed domain models, and handlers that hold up under peak shipping loads.",
           "Let the type system carry the invariants: serde-typed domain models, Result-based error handling, Send + Sync discipline for multi-instance safety.",
           "Rust as the single source of truth: shared crates compiled natively for services and to WebAssembly for TypeScript, with parity tests on both sides.",
         ],
@@ -41,7 +41,11 @@ export const skillGroups: SkillGroup[] = [
       { name: "Python", depth: "production", note: "FastAPI, SQLAlchemy 2 async, asyncpg" },
       { name: "Java", depth: "production", note: "Spring Boot" },
       { name: "SQL", depth: "production" },
-      { name: "Go", depth: "working" },
+      {
+        name: "Go",
+        depth: "production",
+        note: "Job handlers on 1buy.ai's scheduler: goroutine pools, channel semaphores, context deadlines",
+      },
     ],
   },
   {
@@ -58,7 +62,7 @@ export const skillGroups: SkillGroup[] = [
         note: "One image, three roles; bounded contexts enforced in CI; Postgres as the queue",
       },
       { name: "FastAPI", depth: "production" },
-      { name: "Concurrency & async runtimes", depth: "production", note: "Tokio, semaphore-bounded worker pools" },
+      { name: "Concurrency & async runtimes", depth: "production", note: "Tokio at RapidShyp; goroutine pools and channel semaphores in Go" },
       { name: "gRPC", depth: "production", note: "service-to-service APIs with protobuf contracts" },
       { name: "WebSockets", depth: "production", note: "real-time updates to clients" },
       { name: "Spring Boot", depth: "working" },

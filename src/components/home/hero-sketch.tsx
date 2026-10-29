@@ -15,7 +15,7 @@ const spec: SketchSpec = {
     { id: "mail", label: "Supplier mail", kind: "client", note: "every inbound email" },
     { id: "kafka", label: "Kafka", kind: "queue", note: "order.events" },
     { id: "agents", label: "Mail agents", kind: "model", note: "anchor · classify · act" },
-    { id: "workers", label: "Rust workers", kind: "worker", note: "Arc<Semaphore> permits" },
+    { id: "workers", label: "Go workers", kind: "worker", note: "bounded by permits" },
     { id: "api", label: "Fulfilment service", kind: "service", note: "FastAPI · 3 roles" },
     { id: "mongo", label: "MongoDB", kind: "db", note: "100M+ documents" },
     { id: "pg", label: "PostgreSQL", kind: "db", note: "truth + task queue" },

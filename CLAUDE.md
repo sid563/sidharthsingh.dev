@@ -47,11 +47,12 @@ Live at https://sidharthsingh.dev since 27 Oct 2026. Vercel project `sidharthsin
 
 ## Pending
 - Chatbot behind the floating button (`src/components/chat-widget.tsx`), approved 29 Oct 2026, not started.
-- Real numbers for the Tokio scheduler project, once provided (the 20k-orders bulk-upload figure for RapidShyp came from Sidharth on 29 Oct 2026).
+- The 20k-orders bulk-upload figure for RapidShyp came from Sidharth on 29 Oct 2026; the RapidShyp resume bullets added the same day contain inferred lines he still has to confirm (learned Rust on the job, promotion timing, "Hardened the Bulk Orders pipeline").
 - Optional: set `CRON_SECRET` and `DEPLOY_HOOK_URL` on Vercel for the daily rebuild of the GitHub calendar; add an email login to the Vercel account.
 - Replace the four sample draft posts with real writing; swap the placeholder figure for real architecture images.
 
 ## Facts that must stay true
 - The 1buy.ai order-fulfilment backend does NOT use Kafka. It is a modular monolith (one image, three roles: Granian API, N workers, leader-elected scheduler) with PostgreSQL as the queue and transactional outbox. Kafka experience is from RapidShyp and other 1buy.ai systems. Never describe the fulfilment backend with Kafka.
 - Numbers in `content/projects/order-fulfilment-backend.mdx` (293 endpoints, 60 handlers, 17 classifiers, 1,950 tests, ~81k lines) were counted from the work repository on 29 Oct 2026 and will drift; refresh them when that page is next touched.
+- The Tokio job-scheduler project never existed as described; it was removed on 29 Oct 2026 at Sidharth's request and replaced by `content/projects/go-job-scheduler.mdx` (Tech-1buy/1buy-scheduler, Go). Git history there: engine by Asif (Apr 2026); Sidharth built the alert scanner, handler registration and seeding, and the May 2026 refactor. Never reintroduce a Tokio scheduler.
 - Inbound-mail handler count is 17 (was 16); it appears in `site.ts` stats, `resume.ts` and `content/projects/inbound-mail-agents.mdx`.

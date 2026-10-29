@@ -126,7 +126,7 @@ await test("OG image is a PNG and sitemap lists content routes", async () => {
   const og = await page.request.get(`${base}/opengraph-image`);
   if (!og.headers()["content-type"]?.startsWith("image/png")) throw new Error(`og content-type ${og.headers()["content-type"]}`);
   const xml = await (await page.request.get(`${base}/sitemap.xml`)).text();
-  for (const p of ["/projects/tokio-job-scheduler", "/writing/learning-postgres-from-the-inside", "/progress/kafka-mastery", "/now", "/resume", "/roadmap"]) {
+  for (const p of ["/projects/go-job-scheduler", "/writing/learning-postgres-from-the-inside", "/progress/kafka-mastery", "/now", "/resume", "/roadmap"]) {
     if (!xml.includes(p)) throw new Error(`sitemap missing ${p}`);
   }
 });
@@ -168,7 +168,7 @@ await test("every project card and page carries a system sketch with moving pack
   const cards = await page.locator("main a[href^='/projects/']").count();
   const thumbs = await page.locator("main a[href^='/projects/'] svg.sketch").count();
   if (thumbs !== cards) throw new Error(`${thumbs} sketches for ${cards} cards`);
-  await page.goto(`${base}/projects/tokio-job-scheduler`, { waitUntil: "networkidle" });
+  await page.goto(`${base}/projects/go-job-scheduler`, { waitUntil: "networkidle" });
   const packets = await page.locator("svg.sketch-full .sketch-packet").count();
   if (packets === 0) throw new Error("no packets on the project page sketch");
 });
@@ -182,7 +182,7 @@ await test("code blocks get a copy button that reports Copied", async () => {
 });
 
 await test("every project, post and journey has its own OG image, and pages point at it", async () => {
-  for (const route of ["/projects/tokio-job-scheduler", "/writing/learning-postgres-from-the-inside", "/progress/kafka-mastery"]) {
+  for (const route of ["/projects/go-job-scheduler", "/writing/learning-postgres-from-the-inside", "/progress/kafka-mastery"]) {
     await page.goto(`${base}${route}`, { waitUntil: "networkidle" });
     const og = await page.locator("meta[property='og:image']").first().getAttribute("content");
     if (!og || !og.includes(`${route}/opengraph-image`)) throw new Error(`${route}: og:image is ${og}`);
@@ -210,8 +210,8 @@ await test("progress page shows the GitHub activity calendar", async () => {
 });
 
 await test("404 suggests the closest real route", async () => {
-  await page.goto(`${base}/projects/tokio-job-schedule`, { waitUntil: "networkidle" });
-  await page.locator(".not-found-log a[href='/projects/tokio-job-scheduler']").waitFor({ state: "visible", timeout: 3000 });
+  await page.goto(`${base}/projects/go-job-schedule`, { waitUntil: "networkidle" });
+  await page.locator(".not-found-log a[href='/projects/go-job-scheduler']").waitFor({ state: "visible", timeout: 3000 });
 });
 
 await test("footer shows the local time and a Source link, but no commit hash", async () => {

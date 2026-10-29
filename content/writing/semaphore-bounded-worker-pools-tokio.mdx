@@ -1,9 +1,0 @@
----
-title: "Semaphore-bounded worker pools in Tokio"
-summary: "A pattern for running many jobs concurrently on Tokio without letting any one job kind starve the rest, and why a permit count is a better backpressure knob than a thread count."
-date: "2026-11-15"
-tags: [rust, tokio, concurrency]
-draft: true
----
-
-Draft. This post will walk through the worker-pool pattern used in the [job scheduler rewrite](/projects/tokio-job-scheduler): one `Arc<Semaphore>` per job kind, permits as backpressure, and atomic claims so multiple instances stay safe.

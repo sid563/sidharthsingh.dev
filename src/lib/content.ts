@@ -56,7 +56,7 @@ export const diagramSchema = z.object({
         id: z.string(),
         label: z.string(),
         kind: z.enum(diagramNodeKinds).default("service"),
-        /** One short line under the label, e.g. "Arc<Semaphore>". */
+        /** One short line under the label, e.g. "SET NX PX". */
         note: z.string().optional(),
       }),
     )

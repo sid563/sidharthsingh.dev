@@ -1,0 +1,171 @@
+---
+title: "Go job scheduler: tick, lock, run, advance"
+summary: "1buy.ai's background-job service in Go: a one-second dispatcher, a fixed goroutine pool behind a bounded queue, a per-job Redis lock so a job runs at most once across replicas, and Kafka events for every run. I built the alert scanner that runs on it, the handler registration and boot-time seeding every later job follows, and the refactor that stripped the service back to a generic scheduler."
+date: "2026-04-17"
+status: shipped
+featured: true
+kind: work
+org: "1buy.ai"
+role: "Backend engineer; alert scanner, handler registration and seeding, the generic-scheduler refactor"
+stack: [Go, MongoDB, Redis, Kafka, Prometheus, chi, zap]
+metrics:
+  - { label: "Dispatch", value: "1 s tick, 100 due per tick" }
+  - { label: "Pool", value: "30 goroutines, bounded queue" }
+  - { label: "Per-job lock", value: "Redis SET NX PX" }
+  - { label: "Alert scan", value: "5 rule types, 50 permits" }
+diagram:
+  nodes:
+    - { id: api, label: "Jobs API", kind: service, note: "chi · create · trigger" }
+    - { id: mongo, label: "MongoDB", kind: db, note: "jobs · executions" }
+    - { id: disp, label: "Dispatcher", kind: service, note: "1 s tick · due jobs" }
+    - { id: pool, label: "Worker pool", kind: worker, note: "30 goroutines · bounded" }
+    - { id: redis, label: "Redis lock", kind: cache, note: "SET NX PX" }
+    - { id: kafka, label: "Kafka", kind: queue, note: "execution events" }
+  edges:
+    - { from: api, to: mongo }
+    - { from: mongo, to: disp, label: "due" }
+    - { from: disp, to: pool, label: "submit" }
+    - { from: pool, to: redis, label: "acquire" }
+    - { from: pool, to: kafka, label: "events" }
+    - { from: pool, to: mongo, label: "advance", dashed: true }
+order: 10
+---
+
+## Context
+
+1buy.ai's component-intelligence platform has work that nobody should trigger by hand: price and
+lifecycle alerts that have to be re-evaluated for every watched part, a spot-price catalogue walk
+that must stay under a vendor's daily quota, health checks, and one-off tasks. A standalone Go
+service owns all of it. Jobs are definitions in MongoDB, created and managed over a small REST API,
+in three shapes: cron (six fields, seconds included), interval, and once.
+
+The engine was built by a teammate in April 2026. This page describes how it works, because the
+pieces I built only make sense against it, and then what I added.
+
+## How a tick works
+
+A dispatcher goroutine wakes every second and asks the store for up to 100 jobs whose
+`next_run_at` has passed, oldest first. Each one becomes a task and is submitted to a fixed pool of
+worker goroutines, 30 by default, fed by a channel buffered to twice the pool size. If every worker
+is busy and the buffer is full, submission blocks. That is the backpressure: the dispatcher simply
+falls behind the clock instead of spawning a goroutine per due job. A job whose handler name is not
+registered is skipped with a warning rather than crashing the tick.
+
+A task's life is five steps, in order:
+
+1. **Lock.** `SET NX PX` on `job:<id>` in Redis, with a TTL of the job's timeout plus five seconds.
+   Another replica that holds the lock means this run is skipped, which is what makes "at most once
+   per tick across any number of instances" true without a leader.
+2. **Record.** An execution row is written as `running` and a `job.execution.started` event goes
+   out on Kafka.
+3. **Run.** The handler gets a context already cancelled at the job's timeout. On error it is
+   retried with exponential backoff, one second doubling to a thirty-second cap, up to the job's
+   `max_retries`, all inside that same deadline.
+4. **Finalise.** The row becomes `success`, `failed` or `timeout` with its duration, the matching
+   event is published, and Prometheus counters and histograms are updated per handler.
+5. **Advance.** Cron jobs get their next fire time, interval jobs get now plus the interval, and
+   one-shot jobs are disabled.
+
+A Kafka outage never blocks a run: publish errors are logged and the task carries on. Handlers are
+registered by name at boot, and a duplicate name panics the process on startup, so a bad deploy
+fails in seconds rather than running two handlers under one name in production.
+
+## The alert scanner
+
+This is the handler I built, and the reason the service exists for the product. Users watch parts
+and set rules: price change above a percentage, a risk score crossing a level, a compliance flag
+flipping, a lifecycle stage moving, a new alternate appearing. Five rule types, seven operators.
+
+<Diagram
+  title="One scan tick"
+  nodes={[
+    { id: "rules", label: "Alert rules", kind: "db", note: "MongoDB · ≤200 docs per tick" },
+    { id: "due", label: "Due rules", kind: "service", note: "cooldown 7 days" },
+    { id: "eval", label: "Evaluate", kind: "worker", note: "50 permits" },
+    { id: "notify", label: "Notify", kind: "external", note: "email · 10 permits" },
+  ]}
+  edges={[
+    { from: "rules", to: "due", label: "flatten" },
+    { from: "due", to: "eval" },
+    { from: "eval", to: "notify", label: "triggered" },
+    { from: "eval", to: "rules", label: "BulkWrite", dashed: true },
+  ]}
+  caption="Read a bounded batch, keep only rules past their cooldown, evaluate with bounded fan-out, write everything back in one bulk operation, then notify."
+/>
+
+Every tick reads at most 200 alert documents that still have an active rule, flattens them to
+rules whose last check is older than the cooldown (a rule never checked is due), evaluates those
+concurrently, writes the results back in one `BulkWrite`, inserts notifications, and sends email for
+the rules that asked for it. The fan-out is bounded with the plainest tool Go has:
+
+```go
+var wg sync.WaitGroup
+sem := make(chan struct{}, concurrency) // permits, not threads
+
+for _, t := range tasks {
+    wg.Add(1)
+    go func(t evalTask) {
+        defer wg.Done()
+        sem <- struct{}{}        // take a permit; blocks when all are out
+        defer func() { <-sem }() // hand it back
+        results <- evaluate(ctx, t)
+    }(t)
+}
+wg.Wait()
+```
+
+Fifty permits for value lookups, ten for SMTP sends. The handler's work is capped at every stage,
+because a handler that does not bound itself is the easiest way to take a shared scheduler down.
+
+Two details carried most of the correctness:
+
+- **Normalise before you compare.** The rules are written by a TypeScript backend and a web UI, and
+  the values come from several upstream pipelines, so "10" versus 5, `Low` versus `LOW`, and `yes`
+  versus `YES` all arrive. Every current value, baseline and threshold is canonicalised to one form
+  per field (floats for prices and scores, title case for risk levels, upper case for compliance
+  flags) before any operator runs.
+- **Idempotent by construction.** The scheduler will retry a handler, and if the lock ever fails
+  open two replicas will run it at once. The scanner always writes `lastCheckedAt`, triggers only on
+  a change since the rule's cursor, and respects a per-rule cooldown, so re-running against the same
+  or stale state fires nothing twice.
+
+The scanner is an always-on system job: at boot the service seeds it idempotently by name (every 24
+hours by default, a ten-minute timeout, no retries, since the next tick is the retry). That
+seeding step, and the single `RegisterAll` that wires handlers into the registry, are the shape a
+later handler followed when a colleague added the spot-price catalogue walk in August.
+
+## Clearing the deck
+
+The service had grown a datasheet pipeline: a headless Chromium pool, OCR, PDF and spreadsheet
+conversion, a proxy layer, host governors and failure budgets. It belonged somewhere else. In May I
+removed it, 34 files and about 10,000 lines, so that what remained was a generic scheduler with
+handlers as plug-ins and nothing the next handler would have to understand first.
+
+## By the numbers
+
+| | |
+| --- | --- |
+| Dispatcher tick | 1 s, up to 100 due jobs per tick |
+| Worker pool | 30 goroutines, queue buffered to 60 |
+| Lock TTL | job timeout (30 s default) plus 5 s |
+| Retry backoff | 1 s doubling, capped at 30 s, inside the job deadline |
+| Job types | cron, interval, once |
+| REST surface | 9 job endpoints, plus liveness, readiness and metrics |
+| Kafka | 2 topics, 10 event types, keyed by job id for per-job ordering |
+| Alert scan | 5 rule types, 7 operators, 200 docs per tick, 50 and 10 permits |
+| Service | about 7,400 lines of Go |
+
+## Honest notes
+
+- The deployment today runs a single instance with an in-process lock; the Redis locker is the same
+  interface and a config change away, which is why the at-most-once guarantee is written into the
+  task rather than the deployment.
+- Kafka event publishing is switched off in the current environment and a no-op publisher stands
+  in. The events are wired and tested; the broker was reserved for CDC consumption.
+- Engine by a teammate; alert scanner, registration, seeding and the refactor by me. The commit
+  history says the same.
+
+<Callout type="tip" title="The one-line version">
+A one-second tick, a bounded pool, a lock per job, and handlers that cap their own fan-out with
+a channel of permits.
+</Callout>
