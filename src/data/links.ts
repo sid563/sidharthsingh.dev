@@ -19,32 +19,38 @@ export const documents = {
   resume: {
     id: "resume",
     path: "/cv",
-    url: "",
+    url: "https://drive.google.com/file/d/1lxYVZ_XmUn-r1ShGrwizdrWudRtMcJ9N/view",
     title: "Original resume (PDF)",
   },
   certificates: [
     {
       id: "google-cloud-foundations",
       path: "/certificates/google-cloud-foundations",
-      url: "",
+      url: "https://drive.google.com/file/d/1e48TIMJJ5ZNuT1Ch9JlHiu7L613b8OST/view",
       title: "Google Cloud Computing Foundations",
+    },
+    {
+      id: "vmware-spring-boot",
+      path: "/certificates/vmware-spring-boot",
+      url: "https://drive.google.com/file/d/1PN8_cFmjAe3tXmYCb6J8CJr8Oi7snLRf/view",
+      title: "Modern Application Development with Java Spring Boot",
     },
     {
       id: "vmware-it-academy",
       path: "/certificates/vmware-it-academy",
-      url: "",
-      title: "VMware IT Academy",
+      url: "https://drive.google.com/file/d/1hE49fFzCrFzfG56hlFso2IGpr5gspo2c/view",
+      title: "Core Technical Skills (Docker, Kubernetes, MongoDB)",
     },
     {
       id: "rapidshyp-hackathon-2025",
       path: "/certificates/rapidshyp-hackathon-2025",
-      url: "",
+      url: "https://drive.google.com/file/d/1xPMoOoSUebS4uNe6Y7NgWg20hYTcISa8/view",
       title: "RapidShyp Hackathon 2025, first place",
     },
     {
       id: "customer-obsession-award",
       path: "/certificates/customer-obsession-award",
-      url: "",
+      url: "https://drive.google.com/file/d/1dhPnkJhw36f6NXnTLRTbDllcaM4ThVXf/view",
       title: "Customer Obsession Award",
     },
   ],
@@ -52,7 +58,7 @@ export const documents = {
     {
       id: "btech-degree",
       path: "/documents/btech-degree",
-      url: "",
+      url: "https://drive.google.com/file/d/1LScuTqjR7rOxmLPlHTAWZ3vJTYc1CKqo/view",
       title: "B.Tech degree certificate, VIT Vellore",
     },
   ],

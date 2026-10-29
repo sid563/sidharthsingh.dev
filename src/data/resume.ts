@@ -141,7 +141,13 @@ export const resume = {
       documentId: "google-cloud-foundations",
     },
     {
-      title: "Modern App Development (Java Spring Boot) and Core Technical Skills (Docker, Kubernetes, MongoDB)",
+      title: "Modern Application Development with Java Spring Boot",
+      issuer: "VMware IT Academy",
+      year: "2023",
+      documentId: "vmware-spring-boot",
+    },
+    {
+      title: "Core Technical Skills (Docker, Kubernetes, MongoDB)",
       issuer: "VMware IT Academy",
       year: "2023",
       documentId: "vmware-it-academy",
