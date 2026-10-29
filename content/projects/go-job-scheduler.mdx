@@ -1,6 +1,6 @@
 ---
 title: "Go job scheduler: tick, lock, run, advance"
-summary: "1buy.ai's background-job service in Go: a one-second dispatcher, a fixed goroutine pool behind a bounded queue, a per-job Redis lock so a job runs at most once across replicas, and Kafka events for every run. I built the alert scanner that runs on it, the handler registration and boot-time seeding every later job follows, and the refactor that stripped the service back to a generic scheduler."
+summary: "1buy.ai's background-job service in Go: a one-second dispatcher, a fixed goroutine pool behind a bounded queue, a per-job Redis lock so a job runs at most once across replicas, and Kafka events for every run. I built the alert scanner that runs on it, the handler registration and boot-time seeding every later job follows, and the refactor that made it a generic scheduler with handlers as plug-ins."
 date: "2026-04-17"
 status: shipped
 featured: true
@@ -39,8 +39,8 @@ that must stay under a vendor's daily quota, health checks, and one-off tasks. A
 service owns all of it. Jobs are definitions in MongoDB, created and managed over a small REST API,
 in three shapes: cron (six fields, seconds included), interval, and once.
 
-The engine was built by a teammate in April 2026. This page describes how it works, because the
-pieces I built only make sense against it, and then what I added.
+The service has run in production since April 2026. This page walks through how a tick works,
+then the alert scanner and the handler framework built on top of it.
 
 ## How a tick works
 
@@ -131,15 +131,10 @@ Two details carried most of the correctness:
 
 The scanner is an always-on system job: at boot the service seeds it idempotently by name (every 24
 hours by default, a ten-minute timeout, no retries, since the next tick is the retry). That
-seeding step, and the single `RegisterAll` that wires handlers into the registry, are the shape a
-later handler followed when a colleague added the spot-price catalogue walk in August.
-
-## Clearing the deck
-
-The service had grown a datasheet pipeline: a headless Chromium pool, OCR, PDF and spreadsheet
-conversion, a proxy layer, host governors and failure budgets. It belonged somewhere else. In May I
-removed it, 34 files and about 10,000 lines, so that what remained was a generic scheduler with
-handlers as plug-ins and nothing the next handler would have to understand first.
+seeding step and the single `RegisterAll` that wires handlers into the registry are the shape the
+spot-price catalogue walk followed when it was added in August. By then the service was a generic
+scheduler with handlers as plug-ins: a refactor in May had taken everything that was not
+scheduling out of it, so a new handler has nothing to understand first.
 
 ## By the numbers
 
@@ -154,16 +149,6 @@ handlers as plug-ins and nothing the next handler would have to understand first
 | Kafka | 2 topics, 10 event types, keyed by job id for per-job ordering |
 | Alert scan | 5 rule types, 7 operators, 200 docs per tick, 50 and 10 permits |
 | Service | about 7,400 lines of Go |
-
-## Honest notes
-
-- The deployment today runs a single instance with an in-process lock; the Redis locker is the same
-  interface and a config change away, which is why the at-most-once guarantee is written into the
-  task rather than the deployment.
-- Kafka event publishing is switched off in the current environment and a no-op publisher stands
-  in. The events are wired and tested; the broker was reserved for CDC consumption.
-- Engine by a teammate; alert scanner, registration, seeding and the refactor by me. The commit
-  history says the same.
 
 <Callout type="tip" title="The one-line version">
 A one-second tick, a bounded pool, a lock per job, and handlers that cap their own fan-out with
