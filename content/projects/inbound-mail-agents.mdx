@@ -1,6 +1,6 @@
 ---
 title: "Inbound mail agents: anchor, classify, act"
-summary: "An LLM-assisted pipeline that reads every email the fulfilment platform receives, works out which order or shipment it belongs to without trusting the model to decide, routes it to one of 16 plug-in handlers, and dispatches the resulting action through a transactional outbox."
+summary: "An LLM-assisted pipeline that reads every email the fulfilment platform receives, works out which order or shipment it belongs to without trusting the model to decide, routes it to one of 17 plug-in handlers, and dispatches the resulting action through a transactional outbox."
 date: "2026-10-20"
 status: in-progress
 featured: true
@@ -9,14 +9,14 @@ org: "1buy.ai"
 role: "Backend engineer, designed and built the pipeline"
 stack: [Python, FastAPI, PostgreSQL, Microsoft Graph, Claude API, Groq, Transactional outbox]
 metrics:
-  - { label: "Handlers", value: "16, auto-discovered" }
+  - { label: "Handlers", value: "17, auto-discovered" }
   - { label: "Model calls per mail", value: "0 to 2" }
   - { label: "Outcomes recorded", value: "4 explicit dispositions" }
 diagram:
   nodes:
     - { id: inbox, label: "Inbox", kind: external, note: "Microsoft Graph" }
     - { id: anchor, label: "Anchor · classify", kind: model, note: "0 to 2 model calls" }
-    - { id: handlers, label: "Handlers ×16", kind: worker, note: "one file each" }
+    - { id: handlers, label: "Handlers ×17", kind: worker, note: "one file each" }
     - { id: outbox, label: "Outbox", kind: queue, note: "transactional" }
   edges:
     - { from: inbox, to: anchor, label: "every mail" }
@@ -93,7 +93,7 @@ fine". Only *no anchor* is a human's problem; the rest are either success or eng
 
 ## Where it stands
 
-Sixteen handlers cover supplier quotes, goods readiness, logistics and customs correspondence, lab
+Seventeen handlers cover supplier quotes, goods readiness, logistics and customs correspondence, lab
 testing replies, approval replies and the escrow lifecycle. The pipeline is in user acceptance
 testing with the operations team and the handler count is still growing. This is live work, so the
 write-up stays at this level of detail.

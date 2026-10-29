@@ -1,6 +1,6 @@
 ---
 title: "Bulk orders, multi-channel fulfilment and carrier integrations for a shipping platform"
-summary: "Designed and owned the B2B Bulk Orders and Purchase Requisition flows in RapidShyp's Order Management System, built Rust (Actix Web) microservices on the hot paths, and wired Kafka pipelines and carrier integrations so sellers on multiple sales channels ship through one platform."
+summary: "Designed and owned the B2B Bulk Orders and Purchase Requisition flows in RapidShyp's Order Management System, taking 20,000 orders in a single upload call, built Rust (Actix Web) microservices on the hot paths, and wired Kafka pipelines and carrier integrations so sellers on multiple sales channels ship through one platform."
 date: "2025-06-01"
 status: shipped
 featured: false
@@ -9,13 +9,14 @@ org: "RapidShyp (Om Logistics)"
 role: "Software Engineer"
 stack: [Rust, Actix Web, Tokio, Java, Kafka, MongoDB, MySQL, Redis, TiKV, etcd, React, Next.js]
 metrics:
+  - { label: "Bulk upload", value: "20,000 orders, one call" }
   - { label: "Hot-path services", value: "Rust (Actix Web on Tokio)" }
   - { label: "Messaging", value: "Kafka event streams" }
   - { label: "Recognition", value: "1st place hackathon · Customer Obsession Award" }
 diagram:
   nodes:
     - { id: channels, label: "Sales channels", kind: client, note: "marketplaces · storefronts" }
-    - { id: bulk, label: "Bulk upload", kind: file, note: "hundreds of orders" }
+    - { id: bulk, label: "Bulk upload", kind: file, note: "20,000 orders per call" }
     - { id: oms, label: "Order management", kind: service, note: "Rust · Actix Web" }
     - { id: kafka, label: "Kafka", kind: queue, note: "shipment status" }
     - { id: carriers, label: "Carrier APIs", kind: external, note: "create · track" }
@@ -38,7 +39,7 @@ carriers, track, and keep every system in agreement about the current status.
 
 ## What I built
 
-- **Bulk Orders, end to end.** Upload and validation of hundreds of orders at once, multi-seller
+- **Bulk Orders, end to end.** Upload and validation of 20,000 orders in a single call, multi-seller
   shipment creation, and orchestration across warehouses, with Purchase Requisition workflows and
   approval steps for the B2B side.
 - **Multi-channel ingestion.** Orders from marketplace and storefront channels flow into the same

@@ -52,6 +52,11 @@ export const skillGroups: SkillGroup[] = [
       { name: "NestJS", depth: "expert" },
       { name: "Hexagonal architecture", depth: "expert" },
       { name: "Event-driven design", depth: "expert" },
+      {
+        name: "Modular monoliths",
+        depth: "production",
+        note: "One image, three roles; bounded contexts enforced in CI; Postgres as the queue",
+      },
       { name: "FastAPI", depth: "production" },
       { name: "Concurrency & async runtimes", depth: "production", note: "Tokio, semaphore-bounded worker pools" },
       { name: "gRPC", depth: "production", note: "service-to-service APIs with protobuf contracts" },
@@ -74,6 +79,7 @@ export const skillGroups: SkillGroup[] = [
         points: [
           "In production every day: schema design, SQLAlchemy 2 async with Alembic migrations, pgvector similarity search, append-only event tables.",
           "Fluent at the usage layer: query design, EXPLAIN ANALYZE, compound and partial indexes, lock-aware DDL on hot tables.",
+          "Postgres as infrastructure: a job queue claimed with SELECT … FOR UPDATE SKIP LOCKED and a stale-lease reclaim, leader election on a session advisory lock, SET LOCAL lock_timeout so a stuck request fails fast instead of committing late.",
           "Going below the surface: an eight-week internals course on the planner, storage layout, MVCC, WAL and buffer management, tracked on the progress page.",
         ],
       },

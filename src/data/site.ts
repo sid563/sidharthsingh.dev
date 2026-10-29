@@ -18,8 +18,8 @@ export const site = {
   stats: [
     { value: 2, suffix: "+", label: "years in production", detail: "Rust, TypeScript, Python" },
     { value: 100, suffix: "M+", label: "documents indexed", detail: "MongoDB pipelines for real-time discovery" },
-    { value: 16, label: "LLM mail agents", detail: "anchor, classify, act" },
-    { value: 1, suffix: "st", label: "place, hackathon 2025", detail: "across all engineering teams" },
+    { value: 20, suffix: "k", label: "orders in one upload", detail: "bulk order ingestion at RapidShyp" },
+    { value: 17, label: "LLM mail agents", detail: "anchor, classify, act" },
   ],
   location: "Delhi, India",
   email: "sidharthsingh7111@gmail.com",
@@ -34,7 +34,7 @@ export const site = {
   /** Short bio paragraphs for the About page. */
   about: [
     "I am a backend engineer with a little over two years of production experience. I have spent that time inside procurement, logistics and supply-chain platforms, where the interesting problems are throughput, correctness under concurrency, and keeping many services in agreement about what just happened.",
-    "At 1buy.ai I work on an ultra-small team that owns core platform flows end to end. That has meant MongoDB aggregation pipelines over 100M+ pricing documents, a Rust job scheduler built on Tokio and semaphore-bounded worker pools, shared pricing logic compiled from Rust to WebAssembly, and an order-fulfilment backend on FastAPI, PostgreSQL and Kafka.",
+    "At 1buy.ai I work on an ultra-small team that owns core platform flows end to end. That has meant MongoDB aggregation pipelines over 100M+ pricing documents, a Rust job scheduler built on Tokio and semaphore-bounded worker pools, shared pricing logic compiled from Rust to WebAssembly, and the order-fulfilment backend on FastAPI and PostgreSQL, whose architecture I designed from scratch: one image, three process roles, and Postgres as both the source of truth and the job queue.",
     "Before that I was at RapidShyp, a B2B shipping platform for marketplace and multi-channel sellers, building Rust (Actix Web) microservices, Kafka pipelines and carrier integrations for bulk order processing and order lifecycle orchestration, with MongoDB, MySQL, Redis, TiKV and etcd in the mix.",
     "Outside work I like to go one layer deeper than the job requires: PostgreSQL query planners, async runtimes, HNSW vector indexing, and the ways distributed systems fail. This site is where I keep that learning honest and in public.",
   ],

@@ -46,11 +46,12 @@ Vercel Hobby. Domain sidharthsingh.dev on Cloudflare Registrar (DNS records for 
 Live at https://sidharthsingh.dev since 27 Oct 2026. Vercel project `sidharthsingh-dev` (GitHub sid563/sidharthsingh.dev (public), auto-deploys main). www 308s to the apex; Cloudflare holds a DNS-only A record on `@` and a DNS-only CNAME on `www`. Full suite (`BASE=https://sidharthsingh.dev pnpm check:visual && pnpm check:interact`) passed on launch day.
 
 ## Pending
-- Drive links for resume, certificates and degree in `src/data/links.ts`.
-- Chatbot behind the floating button (`src/components/chat-widget.tsx`), planned for Nov 2026.
-- Real stats for RapidShyp and the Tokio scheduler, once provided.
-- Per-page OG images, GitHub activity and the resume PDF shipped 29 Oct 2026. Still open: set `CRON_SECRET` and `DEPLOY_HOOK_URL` on Vercel for the daily rebuild.
-- Commit and push the `scripts/interact.mjs` change (project filter counts now derived from `content/projects`).
-- Canonical URL: set `alternates.canonical` in the root metadata so `sidharthsingh-dev.vercel.app` doesn't compete with the domain.
-- Google Search Console: add sidharthsingh.dev as a Domain property (TXT record at Cloudflare), submit `/sitemap.xml`.
-- GitHub repo Website field: https://sidharthsingh.dev.
+- Chatbot behind the floating button (`src/components/chat-widget.tsx`), approved 29 Oct 2026, not started.
+- Real numbers for the Tokio scheduler project, once provided (the 20k-orders bulk-upload figure for RapidShyp came from Sidharth on 29 Oct 2026).
+- Optional: set `CRON_SECRET` and `DEPLOY_HOOK_URL` on Vercel for the daily rebuild of the GitHub calendar; add an email login to the Vercel account.
+- Replace the four sample draft posts with real writing; swap the placeholder figure for real architecture images.
+
+## Facts that must stay true
+- The 1buy.ai order-fulfilment backend does NOT use Kafka. It is a modular monolith (one image, three roles: Granian API, N workers, leader-elected scheduler) with PostgreSQL as the queue and transactional outbox. Kafka experience is from RapidShyp and other 1buy.ai systems. Never describe the fulfilment backend with Kafka.
+- Numbers in `content/projects/order-fulfilment-backend.mdx` (293 endpoints, 60 handlers, 17 classifiers, 1,950 tests, ~81k lines) were counted from the work repository on 29 Oct 2026 and will drift; refresh them when that page is next touched.
+- Inbound-mail handler count is 17 (was 16); it appears in `site.ts` stats, `resume.ts` and `content/projects/inbound-mail-agents.mdx`.

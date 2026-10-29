@@ -1,49 +1,210 @@
 ---
-title: "Order-fulfilment backend: purchase order to customs"
-summary: "An event-driven fulfilment service on FastAPI, PostgreSQL and Kafka that carries a purchase order through shipment and customs, with DHL carrier integration and Claude parsing the trade documents."
-date: "2026-10-01"
+title: "Order-fulfilment backend: a modular monolith in three roles"
+summary: "The architecture behind 1buy.ai's fulfilment platform, designed from scratch: a feature-first FastAPI monolith shipped as one image in three process roles, with PostgreSQL as both the source of truth and the job queue, workers that claim with SELECT … FOR UPDATE SKIP LOCKED, and a scheduler elected by an advisory lock."
+date: "2026-08-07"
 status: in-progress
 featured: true
 kind: work
 org: "1buy.ai"
-role: "Backend engineer"
-stack: [Python, FastAPI, PostgreSQL, Kafka, SQLAlchemy, Alembic, Claude API]
+role: "Backend engineer; designed the architecture from scratch and wrote the kernel"
+stack: [Python, FastAPI, Granian, PostgreSQL, SQLAlchemy 2, asyncpg, Alembic, Redis, S3, Claude API, Microsoft Graph, DHL API, Docker]
 metrics:
-  - { label: "Workflow", value: "PO → shipment → customs" }
-  - { label: "Integrations", value: "DHL carrier API, Microsoft 365 mail" }
-  - { label: "Documents", value: "Packing lists, Bills of Entry parsed by Claude" }
+  - { label: "Shape", value: "1 image, 3 roles" }
+  - { label: "Queue", value: "PostgreSQL, SKIP LOCKED" }
+  - { label: "Boundaries", value: "4 contexts, enforced in CI" }
+  - { label: "Surface", value: "290+ endpoints, 60 handlers" }
 diagram:
   nodes:
-    - { id: po, label: "Purchase order", kind: client, note: "shipment · customs" }
-    - { id: docs, label: "Trade documents", kind: file, note: "parsed by Claude" }
-    - { id: api, label: "Fulfilment service", kind: service, note: "FastAPI · explicit states" }
-    - { id: kafka, label: "Kafka", kind: queue, note: "domain events" }
-    - { id: pg, label: "PostgreSQL", kind: db, note: "append-only log" }
-    - { id: dhl, label: "DHL", kind: external, note: "booking · tracking" }
+    - { id: api, label: "API ×4", kind: service, note: "FastAPI on Granian" }
+    - { id: sched, label: "Scheduler ×1", kind: service, note: "advisory-lock leader" }
+    - { id: pg, label: "PostgreSQL", kind: db, note: "truth + task_queue" }
+    - { id: workers, label: "Workers ×N", kind: worker, note: "SKIP LOCKED claim" }
+    - { id: ext, label: "Mail · Claude · DHL", kind: external, note: "the slow calls" }
   edges:
-    - { from: po, to: api }
-    - { from: docs, to: api, dashed: true }
-    - { from: api, to: kafka, label: "publish" }
-    - { from: api, to: pg }
-    - { from: api, to: dhl }
-order: 30
+    - { from: api, to: pg, label: "enqueue" }
+    - { from: sched, to: pg, label: "cron rows" }
+    - { from: pg, to: workers, label: "claim" }
+    - { from: workers, to: ext }
+    - { from: workers, to: pg, label: "done · publish", dashed: true }
+order: 5
 ---
 
 ## Context
 
-Fulfilment for a B2B procurement platform spans several departments and several external parties: suppliers, carriers, customs agents, finance. Most of the coordination used to happen in email threads.
+1buy.ai sources electronic components for B2B buyers and then has to get the goods delivered:
+supplier readiness, lab testing, shipping, customs, escrow and payment, across several departments
+and several outside parties. The sourcing side already existed as its own platform. Fulfilment needed
+a backend that a very small team could operate, that could grow for a year without a rewrite, and
+that would not need a message broker, a secrets service or a fleet of microservices on day one.
 
-## What the service does
+The design came out of deliberate research before the first feature was written: how teams that
+stayed on a monolith keep it modular, what PostgreSQL can do as a queue, what a transaction pooler
+breaks, and what actually fails at 3 a.m. (a worker killed mid-task, a cron that fires twice). This
+page describes the result. The business logic is live work and stays out of it.
 
-- Models the lifecycle of a purchase order through shipment creation, carrier booking and customs clearance as explicit states and events.
-- Publishes domain events to Kafka so other departments react to what happened rather than polling.
-- Reads trade documents (packing lists, Bills of Entry) with Claude and turns them into structured records with human review where confidence is low.
-- Reads its own inbox: an [inbound mail pipeline](/projects/inbound-mail-agents) anchors every email to an order or shipment, classifies it, and dispatches the resulting action to the context that owns it.
-- Talks to the DHL carrier API for bookings and tracking.
+## The shape: one codebase, one image, three roles
 
-## Engineering notes
+| Role | Boots as | Scales as | Does |
+| --- | --- | --- | --- |
+| **api** | Granian with 4 worker processes behind one kernel-balanced socket | processes per container | serves HTTP, verifies JWTs locally, stays light: anything slow becomes a queue row |
+| **worker** | `python -m app.workers`, N replicas, 4 claim loops each | `--scale worker=N` | drains the queue: mail, LLM parsing, carrier calls, documents |
+| **scheduler** | `python -m app.scheduler`, exactly one active leader | never above one | turns cron into queue rows and imports only the kernel |
 
-- PostgreSQL with SQLAlchemy 2 async and Alembic migrations. The schema is designed around an append-only event log so the timeline of a shipment is always reconstructible.
-- Strict module boundaries enforced with import rules, so contexts talk through published events rather than direct imports.
+Same image, same code, only the command differs. API capacity and background capacity are separate
+knobs, so a burst of HTTP traffic never competes with a backlog of PDF reads, and a long LLM task
+never holds a request handler. Health is two endpoints: live, and ready once Postgres and Redis answer.
 
-This is live work, so the write-up stays at this level of detail.
+## Feature-first modules, boundaries enforced by CI
+
+Four bounded contexts: order, fulfilment, finance, and platform (identity, mail, notifications,
+documents, approvals, activity). Every feature module is the same six files, `router`, `schemas`,
+`models`, `repository`, `service`, `tasks`, and every context adds a `routes.py` and a `tasks.py`
+that aggregate its features, so each composition root mounts one line per context.
+
+The dependency direction is roles → features → core and adapters, and it is not a convention. Three
+`import-linter` contracts run in CI: the business contexts are independent of each other, `core`
+imports nothing above it, and no context may import a composition root. When a module outgrows a
+file it becomes a folder with the same names and the public import path never changes; the escrow
+service went from one file to a package of twenty without any caller noticing.
+
+Cross-context work does not cross the boundary by import. It goes through the queue.
+
+## PostgreSQL is the queue
+
+There is no Kafka, no SQS and no Celery broker. One table, `task_queue`, in a service-private schema
+the app owns and migrates. Every role talks to it: the API and the scheduler insert rows, workers
+claim them. The claim is a single statement:
+
+```sql
+update task_queue
+set    status = 'RUNNING', locked_at = now(),
+       retry_count = retry_count + (case when status = 'RUNNING' then 1 else 0 end)
+where  id = (
+  select id from task_queue
+  where  channel = :channel
+    and (   (status = 'QUEUED'  and next_run_at <= now())
+         or (status = 'RUNNING' and locked_at < now() - interval '15 minutes') )
+  order by created_at
+  for update skip locked
+  limit 1
+)
+returning id, task_name, payload, retry_count;
+```
+
+What makes it cheap and safe at the same time:
+
+- **One round trip, one row lock, microseconds long.** Claiming and locking happen in one
+  `UPDATE … RETURNING` and the transaction commits immediately. The job runs outside it, so a
+  five-minute LLM read holds no database lock at all.
+- **`SKIP LOCKED` means workers never wait on each other.** Each claim loop sees the oldest row that
+  nobody else holds, or nothing. N workers poll the same table with no coordinator, no lease table
+  and no Redis in the loop.
+- **Backoff is a timestamp, not a sleeping worker.** A failed job goes back to `QUEUED` with
+  `next_run_at` pushed out by ten seconds times the attempt count, and the loop moves on to other
+  work.
+- **The second `WHERE` arm reclaims orphans.** A worker killed mid-task, by OOM, by a node dying, or
+  by Docker's grace period expiring under a long read, leaves a `RUNNING` row that nothing would ever
+  pick up again. A `RUNNING` row older than the fifteen-minute lease is treated as dead and
+  re-claimed, with `retry_count` bumped, so a job that kills its worker walks the backoff instead of
+  crash-looping the fleet.
+- **Duplicates are no-ops.** An optional idempotency key with `ON CONFLICT DO NOTHING` makes
+  at-least-once delivery safe: a retried enqueue never double-fires a side effect.
+
+The same table is the **transactional outbox**. When testing marks a lot as passed and finance has to
+react, testing does not call finance. It calls `publish()` inside its own transaction, which inserts
+a row named after the handler finance registered. If the domain write rolls back, the event never
+existed; if it commits, delivery is guaranteed. The event name is the whole contract between
+contexts, which is why the import-linter rule can be absolute. Should Kafka ever become necessary,
+one file changes.
+
+One more column earns its place. Every environment shares one development database, and every
+developer runs their own workers. A row is stamped with the enqueuer's **channel**, the machine's
+hostname by default and `main` on the server, and a worker claims only its own channel. A laptop's
+workers never steal the server's jobs, and nobody has to set anything up.
+
+The worker itself is small: asyncio, four claim loops per replica, a one-second idle poll, and a
+loop that survives any handler exception by marking the row failed. `SIGTERM` sets a stop event, the
+loops finish their current job and the connection pools are disposed. Compose gives the drain sixty
+seconds because a PDF-plus-LLM task outlives Docker's default ten, and the lease reclaim is the
+backstop if the container is killed anyway.
+
+## A scheduler that is safe to run twice
+
+The scheduler is a singleton that does not rely on anyone remembering that. Leadership is a
+PostgreSQL session advisory lock, taken with `pg_try_advisory_lock` on a dedicated connection with no
+pooling, because a session lock does not survive a transaction pooler. The holder is the leader. If
+it dies, its session ends, the lock releases, and the standby wins on its next retry. There is no
+heartbeat table and no etcd.
+
+It imports only `core`. Every job is "insert a row": a delta poll per watched mailbox every two
+minutes, which is the guarantee behind a best-effort webhook; subscription renewal every six hours;
+and morning jobs that fire once per desk day at a local time, keyed by date, so a redeploy at noon
+never sends the morning digest a second time. Because the contract between the scheduler and
+everything else is just the queue table, extracting it to its own machine is a copy, not a rewrite.
+
+A job is tracked by its name *and* its payload. Tracked by name alone, the first mailbox's poll
+stamped the shared entry and every other mailbox looked as if it had just run. That one came out of
+user acceptance testing and is now a comment on the dataclass.
+
+## Kernel details that earned their place
+
+- **One unit of work per use-case.** A service opens a `session_scope()`, works through
+  repositories, and the whole thing commits or rolls back as a block. Reads that tolerate replica lag
+  take a reader session; a write followed by a read-back stays on the writer.
+- **Bounded lock waits.** Every transaction runs `SET LOCAL lock_timeout = 10s`. A request queued
+  behind a lock used to time out at the gateway, tell the person it failed, and then commit minutes
+  later behind their back. Now it rolls back cleanly and the API answers 503 with `Retry-After`.
+- **Pooler-safe by configuration.** With a transaction pooler in front: no connection pool in the
+  app and no prepared-statement caches. Without one: a real pool and server-side prepared
+  statements. One flag, because the right answer depends on the cluster, not the code.
+- **Configuration loaded once.** A single typed settings object. In staging and production one JSON
+  bundle from AWS Secrets Manager overrides the secret fields at boot; nothing re-reads per request.
+  Authentication needs no secret at all: RS256 tokens from the company auth service are verified
+  locally against its public key, cached in Redis.
+- **One logging funnel.** `log(label, message, **context)` emits a JSON line; a label allowlist in
+  the environment decides what persists; the sink is a rotating file today and Kafka when wanted,
+  one class to swap. Every request carries an `X-Request-ID`, honoured if the caller sent one, and
+  produces exactly one HTTP log line.
+- **Adapters behind ports.** Mail (Microsoft Graph), LLMs (Claude, Groq), blob storage (S3),
+  document text (a PDF library today, OCR the day scans arrive) and carriers (DHL booking and
+  tracking, FedEx tracking) sit behind `Protocol` interfaces, so tests use fakes and swapping a
+  provider touches one adapter.
+- **Migrations cannot reach the domain schema.** The queue table sits on its own SQLAlchemy metadata
+  and Alembic targets only that, so a migration can never alter the centrally deployed tables.
+- **The webhook we don't have.** A poller inside the API process sweeps active air waybills on
+  integrated carriers every fifteen minutes, fifty shipments per sweep, and runs the same refresh the
+  toolbar button runs.
+
+The inbox is handled by the [inbound mail pipeline](/projects/inbound-mail-agents), which anchors
+every email to an order or shipment, classifies it, and dispatches the action through the same
+outbox.
+
+## What the architecture carries today
+
+Counted from the repository in late October 2026.
+
+| | |
+| --- | --- |
+| Bounded contexts | 4 |
+| Feature modules | about 30, the same six files each |
+| HTTP endpoints | 293 |
+| Background task handlers | 60 |
+| Inbound-mail classifiers | 17 |
+| Standing scheduler jobs | 4, plus one poll per watched mailbox |
+| Kernel (core, adapters, the three roles) | about 6,000 lines |
+| Whole service | about 81,000 lines of Python in 390 files |
+| Tests | 1,950 test functions in 176 files |
+| Architecture contracts in CI | 3 |
+
+## What I would change next
+
+- Claim in batches when throughput asks for it: the same statement with a larger `limit`, handing
+  a loop several rows per round trip.
+- A retention job for `DONE` rows, so the queue table stays small enough to live in cache.
+- The Kafka seam stays unused on purpose until two services need the same stream. Adding a broker
+  to carry events between modules of one process would be a cost without a benefit.
+
+<Callout type="tip" title="The one-line version">
+Postgres is the queue, the outbox and the lock. One image, three roles. Workers claim with
+`SKIP LOCKED` and reclaim what dies.
+</Callout>
