@@ -1,16 +1,43 @@
 import "server-only";
+import fs from "node:fs";
+import path from "node:path";
 
 /**
  * GitHub contribution calendar for the progress page, fetched at build time.
  *
- * Preferred source: GitHub's GraphQL API, when GITHUB_TOKEN is set in the
- * build environment (any token with no scopes will do). Fallback: the
- * public calendar API at github-contributions-api.jogruber.de, which
- * scrapes the same graph GitHub shows on a profile. Either failing returns
- * null and the section simply does not render; the build never breaks.
+ * Sources, in order: GitHub's GraphQL API when GITHUB_TOKEN is set in the
+ * build environment (a token with no scopes will do); the public calendar
+ * API at github-contributions-api.jogruber.de, which scrapes the graph a
+ * profile shows; and finally the committed snapshot written by
+ * `pnpm github:sync`, so a build with no network to either still renders
+ * the section. Only if all three fail does the section disappear.
  */
 export type ContributionDay = { date: string; count: number; level: 0 | 1 | 2 | 3 | 4 };
-export type Contributions = { total: number; days: ContributionDay[]; source: "graphql" | "public" };
+export type Contributions = { total: number; days: ContributionDay[]; source: "graphql" | "public" | "snapshot" };
+
+const SNAPSHOT = path.join(process.cwd(), "content", "github-contributions.json");
+
+/** Hard cap so a slow API never stalls the build. */
+async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = 15_000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function fromSnapshot(user: string): Contributions | null {
+  if (!fs.existsSync(SNAPSHOT)) return null;
+  const json = JSON.parse(fs.readFileSync(SNAPSHOT, "utf8")) as {
+    user?: string;
+    total: number;
+    days: ContributionDay[];
+  };
+  if (json.user && json.user !== user) return null;
+  return { total: json.total, days: json.days, source: "snapshot" };
+}
 
 const levelFromName: Record<string, ContributionDay["level"]> = {
   NONE: 0,
@@ -23,7 +50,7 @@ const levelFromName: Record<string, ContributionDay["level"]> = {
 async function fromGraphQL(user: string, token: string): Promise<Contributions | null> {
   const query = `query($login: String!) { user(login: $login) { contributionsCollection { contributionCalendar {
     totalContributions weeks { contributionDays { date contributionCount contributionLevel } } } } } }`;
-  const res = await fetch("https://api.github.com/graphql", {
+  const res = await fetchWithTimeout("https://api.github.com/graphql", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ query, variables: { login: user } }),
@@ -54,7 +81,9 @@ async function fromGraphQL(user: string, token: string): Promise<Contributions |
 }
 
 async function fromPublicApi(user: string): Promise<Contributions | null> {
-  const res = await fetch(`https://github-contributions-api.jogruber.de/v4/${user}?y=last`);
+  const res = await fetchWithTimeout(`https://github-contributions-api.jogruber.de/v4/${user}?y=last`, {
+    headers: { "User-Agent": "sidharthsingh.dev build" },
+  });
   if (!res.ok) return null;
   const json = (await res.json()) as {
     total?: Record<string, number>;
@@ -71,15 +100,22 @@ async function fromPublicApi(user: string): Promise<Contributions | null> {
 }
 
 export async function getContributions(user: string): Promise<Contributions | null> {
-  try {
-    const token = process.env.GITHUB_TOKEN;
-    if (token) {
+  const token = process.env.GITHUB_TOKEN;
+  if (token) {
+    try {
       const viaGraphQL = await fromGraphQL(user, token);
       if (viaGraphQL) return viaGraphQL;
+    } catch (error) {
+      console.warn(`[github] GraphQL failed for ${user}:`, error instanceof Error ? error.message : error);
     }
-    return await fromPublicApi(user);
-  } catch (error) {
-    console.warn(`[github] contributions unavailable for ${user}:`, error instanceof Error ? error.message : error);
-    return null;
   }
+  try {
+    const viaPublic = await fromPublicApi(user);
+    if (viaPublic) return viaPublic;
+  } catch (error) {
+    console.warn(`[github] public calendar API failed for ${user}:`, error instanceof Error ? error.message : error);
+  }
+  const snapshot = fromSnapshot(user);
+  if (snapshot) console.warn(`[github] using the committed snapshot for ${user}`);
+  return snapshot;
 }
