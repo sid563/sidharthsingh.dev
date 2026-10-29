@@ -128,7 +128,7 @@ await test("chat widget streams an answer from the chat API (mocked)", async () 
     const cors = {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "POST, OPTIONS",
-      "access-control-allow-headers": "content-type, x-chat-key",
+      "access-control-allow-headers": "content-type, authorization, x-chat-key",
     };
     if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     const body = [
@@ -140,6 +140,22 @@ await test("chat widget streams an answer from the chat API (mocked)", async () 
     ].join("\n\n");
     return route.fulfill({ status: 200, headers: { ...cors, "content-type": "text/event-stream" }, body });
   };
+  const turnstileStub = (route) =>
+    route.fulfill({
+      status: 200,
+      headers: { "content-type": "application/javascript", "access-control-allow-origin": "*" },
+      body: 'window.turnstile={render:(el,o)=>{setTimeout(()=>o.callback("test-token"),0);return "w1"},reset:(id)=>{},remove:(id)=>{}};',
+    });
+  const sessionStub = (route) =>
+    route.request().method() === "OPTIONS"
+      ? route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*", "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type" } })
+      : route.fulfill({
+          status: 200,
+          headers: { "access-control-allow-origin": "*", "content-type": "application/json" },
+          body: JSON.stringify({ session: "test.session.token", expiresAt: Date.now() + 1_800_000 }),
+        });
+  await page.route("**/turnstile/v0/api.js*", turnstileStub);
+  await page.route("**/api/session", sessionStub);
   await page.route("**/api/chat/stream", handler);
   try {
     await page.getByRole("button", { name: "Ask about me" }).click();
@@ -161,6 +177,8 @@ await test("chat widget streams an answer from the chat API (mocked)", async () 
     await again.waitFor({ state: "hidden", timeout: 3000 });
   } finally {
     await page.unroute("**/api/chat/stream", handler);
+    await page.unroute("**/api/session", sessionStub);
+    await page.unroute("**/turnstile/v0/api.js*", turnstileStub);
   }
 });
 

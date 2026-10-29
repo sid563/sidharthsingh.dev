@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { site } from "@/data/site";
-import { ChatError, streamAnswer, type ChatTurn } from "@/lib/chat-api";
+import { ChatError, clearSession, ensureSession, streamAnswer, type ChatTurn } from "@/lib/chat-api";
+import { TurnstileClient, turnstileEnabled } from "@/lib/turnstile";
 import { cn } from "@/lib/utils";
 
 type Message = ChatTurn & { id: number; sources?: string[]; error?: string; pending?: boolean };
@@ -30,11 +31,14 @@ export function ChatWidget() {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [verifying, setVerifying] = React.useState(false);
   const panelRef = React.useRef<HTMLDivElement>(null);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
   const abortRef = React.useRef<AbortController | null>(null);
+  const turnstileBox = React.useRef<HTMLDivElement>(null);
+  const turnstile = React.useRef<TurnstileClient | null>(null);
   const nextId = React.useRef(1);
 
   const restored = React.useRef(false);
@@ -87,6 +91,9 @@ export function ChatWidget() {
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onClick);
+      // the panel (and the Turnstile container inside it) is unmounting
+      turnstile.current?.remove();
+      turnstile.current = null;
     };
   }, [open]);
 
@@ -119,14 +126,39 @@ export function ChatWidget() {
     setBusy(true);
     const controller = new AbortController();
     abortRef.current = controller;
+
+    const run = async (retried: boolean): Promise<void> => {
+      let session: string | undefined;
+      if (turnstileEnabled) {
+        setVerifying(true);
+        try {
+          if (!turnstile.current && turnstileBox.current) turnstile.current = new TurnstileClient(turnstileBox.current);
+          if (!turnstile.current) throw new ChatError("The browser check could not start. Please reload the page.");
+          session = await ensureSession(() => turnstile.current!.getToken());
+        } finally {
+          setVerifying(false);
+        }
+      }
+      try {
+        await streamAnswer({
+          message: question,
+          history,
+          session,
+          signal: controller.signal,
+          onSources: (sources) => update(answerId, { sources }),
+          onToken: (t) => update(answerId, (m) => ({ content: m.content + t })),
+        });
+      } catch (err) {
+        if (err instanceof ChatError && err.code === "session" && !retried) {
+          clearSession();
+          return run(true);
+        }
+        throw err;
+      }
+    };
+
     try {
-      await streamAnswer({
-        message: question,
-        history,
-        signal: controller.signal,
-        onSources: (sources) => update(answerId, { sources }),
-        onToken: (t) => update(answerId, (m) => ({ content: m.content + t })),
-      });
+      await run(false);
       update(answerId, { pending: false });
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
@@ -170,7 +202,7 @@ export function ChatWidget() {
                   Ask about {site.firstName}
                 </p>
                 <p className="text-[11px] text-muted-foreground" aria-live="polite">
-                  {busy ? "Thinking…" : "Answers from this site's content"}
+                  {verifying ? "Checking your browser…" : busy ? "Thinking…" : "Answers from this site's content"}
                 </p>
               </div>
             </div>
@@ -238,6 +270,8 @@ export function ChatWidget() {
               ))
             )}
           </div>
+
+          {turnstileEnabled ? <div ref={turnstileBox} className="px-4 empty:hidden [&:has(iframe)]:pb-2" /> : null}
 
           <form
             className="flex items-center gap-2 border-t px-3 py-2.5"
