@@ -5,7 +5,6 @@ import { DownloadIcon, ExternalLinkIcon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Container } from "@/components/container";
 import { PageHeader } from "@/components/page-header";
-import { PrintButton } from "@/components/resume/print-button";
 import {
   ContactLine,
   Credentials,
@@ -17,6 +16,7 @@ import {
 } from "@/components/resume/resume-sections";
 import { resume } from "@/data/resume";
 import { site } from "@/data/site";
+import { documents } from "@/data/links";
 import { getProject } from "@/lib/content";
 import "./print.css";
 
@@ -47,7 +47,17 @@ export default function ResumePage() {
             Download PDF
           </a>
         ) : null}
-        <PrintButton />
+        {documents.resume.url ? (
+          <a
+            href={documents.resume.path}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonVariants({ variant: "outline", className: "print:hidden" })}
+          >
+            Original PDF
+            <ExternalLinkIcon />
+          </a>
+        ) : null}
         <a
           href={site.linkedin}
           target="_blank"
